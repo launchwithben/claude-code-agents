@@ -28,6 +28,8 @@ Written up in full at **launchwithben.com/notes/claude-code-agents** (the post e
 | `scripts/roles-pulse.mjs` | Reads Claude Code's own transcripts and tells you whether the roles are used, whether they hand back evidence, and what each run cost. |
 | `scripts/hooks/*.test.sh` | Fixtures for every hook. |
 
+**Installing with an agent?** Point it at this repo and tell it to follow `AGENTS.md`: it detects your check command, merges (never overwrites) `settings.json`, runs the hook tests, and tells you the two steps only you can do (restart, trust prompt).
+
 ## Install (5 minutes)
 
 Requirements: Claude Code, `bash`, `python3` (hooks), `node` 18+ (pulse script only), a git repo.
