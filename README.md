@@ -1,4 +1,6 @@
-# claude-code-roles
+# claude-code-agents
+
+**Delegate the work. Get proof back.**
 
 Dedicated agents for Claude Code, all in one chat: a **developer**, a **UI builder** and a **concept designer** that know your project's rules before they start, and have to show their evidence before they're allowed to finish.
 
@@ -36,19 +38,19 @@ Requirements: Claude Code, `bash`, `python3` (hooks), `node` 18+ (pulse script o
 
 ```bash
 # from your project root
-git clone https://github.com/launchwithben/claude-code-roles /tmp/claude-code-roles
+git clone https://github.com/launchwithben/claude-code-agents /tmp/claude-code-agents
 mkdir -p .claude/agents .claude/skills scripts/hooks
-cp    /tmp/claude-code-roles/.claude/agents/*.md        .claude/agents/
-cp -R /tmp/claude-code-roles/.claude/skills/*           .claude/skills/
-cp    /tmp/claude-code-roles/scripts/hooks/role-*       scripts/hooks/
-cp    /tmp/claude-code-roles/scripts/roles-pulse.mjs    scripts/
+cp    /tmp/claude-code-agents/.claude/agents/*.md        .claude/agents/
+cp -R /tmp/claude-code-agents/.claude/skills/*           .claude/skills/
+cp    /tmp/claude-code-agents/scripts/hooks/role-*       scripts/hooks/
+cp    /tmp/claude-code-agents/scripts/roles-pulse.mjs    scripts/
 ```
 
 Then the two project hooks (routing guard + role picker) live in `.claude/settings.json`:
 
 ```bash
 # no settings file yet: copy it
-[ -f .claude/settings.json ] || cp /tmp/claude-code-roles/.claude/settings.json .claude/settings.json
+[ -f .claude/settings.json ] || cp /tmp/claude-code-agents/.claude/settings.json .claude/settings.json
 ```
 
 If you already have a `.claude/settings.json`, merge its `PreToolUse` and `UserPromptSubmit` entries into yours by hand instead of overwriting.
@@ -91,7 +93,7 @@ You get one row per role run (model, tool calls, how often the handback hook blo
 
 - **Rename the roles.** Keep the suffix (`-dev`, `-ui`, `-concept`): the handback hook picks the contract by suffix. Change the `role-` prefix in `role-picker.sh` and set `ROLE_PREFIX` for the pulse script.
 - **Add a role.** Copy an agent file, give it a new suffix, and add a branch for that suffix in `role-handback-check.sh`.
-- **Model.** Roles run on `sonnet`. In our runs the same UI task cost about $4 on Sonnet and $10-26 on the top model; keep the expensive model for single decisions, not whole builds.
+- **Model.** Roles run on `sonnet`. In our runs, UI jobs on Sonnet cost $3.58 to $4.33 each, and the two on the top model cost $9.47 and $25.73 (different jobs, so not a like-for-like comparison). Keep the expensive model for single decisions, not whole builds.
 
 ## Known limits
 

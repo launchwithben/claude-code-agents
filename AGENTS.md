@@ -1,4 +1,4 @@
-# AGENTS.md — installing claude-code-roles into a project
+# AGENTS.md — installing claude-code-agents into a project
 
 You are an agent asked to install this kit into the user's project. Read `README.md` for what each file does; this file is the procedure. Work from the target project's root; commands below are relative to it, but give absolute paths in anything you report. Prerequisites: `bash`, `python3` (the hooks and tests use it), `git`, and `node` 18+ only for the pulse script. If you have a local copy of this repo instead of network access, use it in place of the README's `git clone`.
 
