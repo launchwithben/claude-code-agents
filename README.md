@@ -10,7 +10,7 @@ you ──► lead session ──► role-dev      (scripts, data, config)      
                      └─► role-concept  ("show me 3 ways")              ──┘
 ```
 
-Written up in full at **launchwithben.com/learn** (the post explains why each part exists and what it cost to run for real).
+Written up in full at **launchwithben.com/notes/claude-code-agents** (the post explains why each part exists and what it cost to run for real).
 
 ## What's in the box
 
@@ -94,6 +94,7 @@ You get one row per role run (model, tool calls, how often the handback hook blo
 ## Known limits
 
 - A brand-new `.claude/agents/` folder needs a session restart before its roles exist.
+- **The two-block limit is shared, not per agent.** `role-handback-check.sh` keys its counter on `agent_id`, falling back to `session_id`. In real runs two jobs were blocked with "attempt 2 of 2" as their first block, so the counter was shared across agents of the same role in a session. Treat it as two blocks per role per session.
 - **Headless runs skip the handback hook.** Under `claude -p` (whether the role is dispatched or started with `--agent`), hooks in agent files did not fire in our tests: a `-p` session does not count as a trusted workspace. The routing guard in `settings.json` still runs. Check the handback lines yourself.
 - **A hook with a bash syntax error fails CLOSED.** Bash exits 2 on a syntax error, and 2 is the code Claude Code reads as "block", so the fail-open logic never runs. That is why every test file starts with `bash -n`. Keep apostrophes, backticks and unbalanced parens out of the `$( ... <<'PY' ... )` heredocs, comments included.
 - The handback check reads what the role reports. A role could write `GATE: ... -> PASS` without running anything; the lead still reviews the diff.
