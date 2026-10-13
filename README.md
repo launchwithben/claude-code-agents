@@ -22,7 +22,7 @@ Written up in full at **launchwithben.com/learn** (the post explains why each pa
 | `.claude/skills/build-rules/` | Your project's build rules, injected into every role at start. **Template: fill it in.** |
 | `.claude/skills/design-rules/` | Your design system's rules. **Template: fill it in.** |
 | `.claude/skills/roles/` | `/roles` command: a menu, so nobody memorises role names. |
-| `scripts/hooks/role-handback-check.sh` | Blocks a role from finishing until its report has the evidence (`GATE: ... -> PASS`, `SCREENSHOTS:`). Fails open; gives up after 2 blocks so it can never trap an agent. |
+| `scripts/hooks/role-handback-check.sh` | Blocks a role from finishing until its report has the evidence (`GATE: ... -> PASS`, `SCREENSHOTS:`) or an explicit `GATE-SKIPPED: <reason>`. It checks what the role REPORTS, not that the command ran. Fails open on its own runtime errors and lets the agent through after 2 blocks. |
 | `scripts/hooks/role-routing-guard.sh` | Stops the lead sending an edit to a generic worker instead of a role. Read-only work passes. Logs every denial to `tmp/role-routing/denials.jsonl`. |
 | `scripts/hooks/role-picker.sh` | Typing a bare `@agent-role` shows the role menu instead of guessing. |
 | `scripts/roles-pulse.mjs` | Reads Claude Code's own transcripts and tells you whether the roles are used, whether they hand back evidence, and what each run cost. |
@@ -42,14 +42,21 @@ cp    /tmp/claude-code-roles/scripts/hooks/role-*       scripts/hooks/
 cp    /tmp/claude-code-roles/scripts/roles-pulse.mjs    scripts/
 ```
 
-**Merge** the two hooks from `.claude/settings.json` into your own `.claude/settings.json` (do not overwrite it if you already have one).
+Then the two project hooks (routing guard + role picker) live in `.claude/settings.json`:
+
+```bash
+# no settings file yet: copy it
+[ -f .claude/settings.json ] || cp /tmp/claude-code-roles/.claude/settings.json .claude/settings.json
+```
+
+If you already have a `.claude/settings.json`, merge its `PreToolUse` and `UserPromptSubmit` entries into yours by hand instead of overwriting.
 
 Then:
 
 1. **Fill in `.claude/skills/build-rules/SKILL.md`.** Your real check command, and the rules an agent would otherwise break. Keep it under ~900 words: it is pasted into every role on every run.
 2. **Fill in `.claude/skills/design-rules/SKILL.md`** if you have a UI.
-3. If your check is not `npm run check`, change the `GATE:` line in the three agent files.
-4. **Restart Claude Code.** Agents load at session start; `/clear` is not enough.
+3. **Restart Claude Code if `.claude/agents/` did not exist when the session started.** An existing agents folder is watched and edits apply live; a brand-new one is not picked up until restart (`/clear` is not enough).
+4. **Accept the workspace trust prompt.** Hooks in an agent file only run in a trusted project.
 5. Prove the hooks work in your repo:
    ```bash
    for t in scripts/hooks/*.test.sh; do bash "$t" | tail -1; done
@@ -86,8 +93,11 @@ You get one row per role run (model, tool calls, how often the handback hook blo
 
 ## Known limits
 
-- Roles load at process start. After adding or editing one, restart the session.
-- Under `claude -p --agent <role>` (headless, the role IS the session) the Stop hook does not fire, so check the handback lines yourself.
+- A brand-new `.claude/agents/` folder needs a session restart before its roles exist.
+- **Headless runs skip the handback hook.** Under `claude -p` (whether the role is dispatched or started with `--agent`), hooks in agent files did not fire in our tests: a `-p` session does not count as a trusted workspace. The routing guard in `settings.json` still runs. Check the handback lines yourself.
+- **A hook with a bash syntax error fails CLOSED.** Bash exits 2 on a syntax error, and 2 is the code Claude Code reads as "block", so the fail-open logic never runs. That is why every test file starts with `bash -n`. Keep apostrophes, backticks and unbalanced parens out of the `$( ... <<'PY' ... )` heredocs, comments included.
+- The handback check reads what the role reports. A role could write `GATE: ... -> PASS` without running anything; the lead still reviews the diff.
+- `role-concept` has no worktree on purpose: it works on throwaway routes or a preview branch.
 - The routing guard is a regex on the prompt. It can miss an oddly worded edit. Saying "read-only, do not edit" lets analysis through on purpose.
 - The rules skills are distilled copies of your real docs. When a rule changes at its source, change the skill in the same commit.
 

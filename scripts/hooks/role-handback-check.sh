@@ -10,8 +10,10 @@
 # The role is matched by its SUFFIX, so `role-ui`, `acme-ui` and `ui` all get the UI contract.
 # Prove it: bash scripts/hooks/role-handback-check.test.sh
 #
-# CAN NEVER WEDGE AN AGENT: it fails OPEN on any error of its own (missing python, bad JSON,
+# Built not to wedge an agent: it fails OPEN on its own runtime errors (missing python, bad JSON,
 # unwritable state), and after 2 consecutive blocks for the same agent it allows through.
+# EXCEPT a bash syntax error in this file: bash exits 2, which Claude Code reads as BLOCK. The
+# test file runs `bash -n` first for that reason.
 # Block counts live in <repo>/tmp/role-handback/ (gitignored) or $TMPDIR as a fallback.
 role="${1:-}"
 here="$(cd "$(dirname "${BASH_SOURCE[0]}")" 2>/dev/null && pwd)" || exit 0
