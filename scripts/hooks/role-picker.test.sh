@@ -1,5 +1,7 @@
 #!/usr/bin/env bash
 # Fixtures for role-picker.sh. Run: bash scripts/hooks/role-picker.test.sh
+# A syntax error makes bash exit 2, which Claude Code reads as BLOCK: a fail-open hook would fail closed.
+bash -n "$(dirname "$0")/role-picker.sh" || { echo "FAIL role-picker.sh has a bash syntax error"; exit 1; }
 H="$(dirname "$0")/role-picker.sh"; fails=0
 t() { # expect(menu|none) label prompt
   out="$(printf '%s' "{\"prompt\":$(python3 -c 'import json,sys;print(json.dumps(sys.argv[1]))' "$3")}" | bash "$H")"

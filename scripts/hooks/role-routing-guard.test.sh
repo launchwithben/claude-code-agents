@@ -1,5 +1,7 @@
 #!/usr/bin/env bash
 # Fixtures for role-routing-guard.sh.   bash scripts/hooks/role-routing-guard.test.sh
+# A syntax error makes bash exit 2, which Claude Code reads as BLOCK: a fail-open hook would fail closed.
+bash -n "$(dirname "$0")/role-routing-guard.sh" || { echo "FAIL role-routing-guard.sh has a bash syntax error"; exit 1; }
 set -uo pipefail
 cd "$(dirname "$0")"
 # Denials are logged under $CLAUDE_PROJECT_DIR/tmp/role-routing; point it at a scratch dir so fixtures

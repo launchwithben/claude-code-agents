@@ -1,5 +1,7 @@
 #!/usr/bin/env bash
 # Fixtures for role-handback-check.sh.   bash scripts/hooks/role-handback-check.test.sh
+# A syntax error makes bash exit 2, which Claude Code reads as BLOCK: a fail-open hook would fail closed.
+bash -n "$(dirname "$0")/role-handback-check.sh" || { echo "FAIL role-handback-check.sh has a bash syntax error"; exit 1; }
 set -uo pipefail
 cd "$(dirname "$0")"
 H=./role-handback-check.sh
