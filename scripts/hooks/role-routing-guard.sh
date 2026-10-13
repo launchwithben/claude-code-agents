@@ -55,8 +55,7 @@ try:
         log("repo")
         print("DENY|ROUTING GUARD: this dispatch asks a generic worker (" + (st or "default") + ") to change repo files. "
               "Repo edits go to a role, which carries this repo's build rules and gates: `role-dev` (scripts, data, content, config), "
-              "`role-ui` (components, styles). If it is genuinely read-only, say 'read-only, do not edit' in the prompt. "
-              "See docs/agents-sop/agent-roles.md")
+              "`role-ui` (components, styles). If it is genuinely read-only, say 'read-only, do not edit' in the prompt.")
     else:
         print("ALLOW")
 except SystemExit:
