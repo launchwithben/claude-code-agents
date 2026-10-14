@@ -22,3 +22,8 @@ Three Claude Code subagents (`role-dev` non-UI work, `role-ui` components and st
 
 ## Where the limits are documented
 `README.md` § Known limits. The long write-up with real cost numbers is at https://launchwithben.com/notes/claude-code-agents (free signup, not needed to install).
+
+## Maintaining this repo (for agents working on it)
+- Every change that alters behaviour gets a `CHANGELOG.md` entry in the same commit, and a release tag when it ships (`gh release create vX.Y.Z --notes-from-tag` or with notes copied from the changelog).
+- Keep the status line at the top of `README.md` and `MAINTENANCE.md` true. If the project is being sunset, follow the four steps in `MAINTENANCE.md` in order and do not archive the repo without the owner's say-so.
+- Never add telemetry, network calls or dependencies. The README and the launchwithben.com write-up promise there are none.

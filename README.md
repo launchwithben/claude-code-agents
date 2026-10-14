@@ -2,6 +2,8 @@
 
 **Turn one Claude Code chat into a team of specialists.**
 
+> **Status: Active.** Maintained by [Launch With Ben](https://launchwithben.com). See [MAINTENANCE.md](MAINTENANCE.md) for what that means, how to hear about updates, and what happens if it is ever sunset. Changes are in [CHANGELOG.md](CHANGELOG.md).
+
 A developer, a UI builder and a concept designer, each with its own scope, its own rules and (for the roles that edit code) its own copy of the repo. You talk to one chat. It sends every job to the right specialist, reads the diff that comes back and merges it. A role cannot hand back without showing its check result, or the reason it had none.
 
 No extra windows and no extra subscriptions: the roles are subagents of the Claude Code you already run, and the session you talk to becomes the lead.
@@ -93,7 +95,7 @@ You get one row per role run (model, tool calls, how often the handback hook blo
 
 - **Rename the roles.** Keep the suffix (`-dev`, `-ui`, `-concept`): the handback hook picks the contract by suffix. Change the `role-` prefix in `role-picker.sh` and set `ROLE_PREFIX` for the pulse script.
 - **Add a role.** Copy an agent file, give it a new suffix, and add a branch for that suffix in `role-handback-check.sh`.
-- **Model.** Roles run on `sonnet`. In our runs, UI jobs on Sonnet cost $3.58 to $4.33 each, and the two on the top model cost $9.47 and $25.73 (different jobs, so not a like-for-like comparison). Keep the expensive model for single decisions, not whole builds.
+- **Model.** Roles run on `sonnet`. In our runs, the four finished UI jobs on Sonnet cost $3.58 to $4.33 each, and the two on the top model cost $9.47 and $25.73 (different jobs, so not a like-for-like comparison). Keep the expensive model for single decisions, not whole builds.
 
 ## Known limits
 
@@ -105,6 +107,13 @@ You get one row per role run (model, tool calls, how often the handback hook blo
 - `role-concept` has no worktree on purpose: it works on throwaway routes or a preview branch.
 - The routing guard is a regex on the prompt. It can miss an oddly worded edit. Saying "read-only, do not edit" lets analysis through on purpose.
 - The rules skills are distilled copies of your real docs. When a rule changes at its source, change the skill in the same commit.
+
+## Support and updates
+
+- **Updates:** Watch → Custom → Releases, or the free [AI Boss newsletter](https://launchwithben.com/newsletter).
+- **Problems:** open an issue. **Using it:** open a "Report a result" issue. The kit has no telemetry, so that is how I learn it is being used.
+- **Security:** read the scripts before you install them, and report vulnerabilities privately (see [SECURITY.md](SECURITY.md)).
+- **If it is ever sunset,** the top of this README will say so, the repo will be archived, and a final release will say what to use instead.
 
 ## License
 
