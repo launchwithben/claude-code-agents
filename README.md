@@ -4,7 +4,7 @@
 
 A developer, a UI builder and a concept designer, each with its own scope, its own rules and (for the roles that edit code) its own copy of the repo. You talk to one chat. It sends every job to the right specialist, reads the diff that comes back and merges it. A role cannot hand back without showing its check result, or the reason it had none.
 
-You keep talking to one Claude session (the lead). It sends the work to the right role, each role works in its own git worktree, and the lead reviews the diff and merges. No extra windows and no extra subscriptions.
+No extra windows and no extra subscriptions: the roles are subagents of the Claude Code you already run, and the session you talk to becomes the lead.
 
 ```
 you ──► lead session ──► role-dev      (scripts, data, config)       ──┐
