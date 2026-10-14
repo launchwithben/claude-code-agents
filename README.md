@@ -1,8 +1,8 @@
 # claude-code-agents
 
-**Delegate the work. Get proof back.**
+**Turn one Claude Code chat into a team of specialists.**
 
-Dedicated agents for Claude Code, all in one chat: a **developer**, a **UI builder** and a **concept designer** that know your project's rules before they start, and have to show their evidence before they're allowed to finish.
+A developer, a UI builder and a concept designer, each with its own scope, its own rules and (for the roles that edit code) its own copy of the repo. You talk to one chat. It sends every job to the right specialist, reads the diff that comes back and merges it. A role cannot hand back without showing its check result, or the reason it had none.
 
 You keep talking to one Claude session (the lead). It sends the work to the right role, each role works in its own git worktree, and the lead reviews the diff and merges. No extra windows and no extra subscriptions.
 
