@@ -140,4 +140,15 @@ bash "$I" --target "$U" >/dev/null 2>&1; t_eq 0 "$?" "user-scope install exits 0
 [ ! -d "$U/scripts/roles-kit" ] && [ ! -f "$U/.claude/agents/acme-dev.md" ] && t_pass "the project itself is not touched" || t_fail "project touched"
 grep -q 'HOME/.claude/roles-kit/hooks' "$HOME/.claude/settings.json" && t_pass "hooks point at the user-level kit" || t_fail "user-level hook path"
 bash "$I" --target "$U" --check >/dev/null 2>&1; t_eq 0 "$?" "--check clean at user scope"
+echo "-- the untouched starter overlay warns (it used to install silently with a fake gate and a fake PM repo)"
+W="$S/starter"; mkdir -p "$W"; git init -q -b main "$W" 2>/dev/null
+bash "$I" --target "$W" --init >/dev/null 2>&1
+warn="$(bash "$I" --target "$W" 2>&1 >/dev/null)"; t_eq 0 "$?" "installing the starter still exits 0 (warnings, not errors)"
+echo "$warn" | grep -q '"prefix" is still "acme"' && t_pass "warns about the example prefix" || t_fail "no prefix warning"
+echo "$warn" | grep -q 'acme/widgets' && t_pass "warns about the example PM repo" || t_fail "no pm.repo warning"
+echo "$warn" | grep -q 'scripts/preflight.sh' && t_pass "warns about the gate script that does not exist" || t_fail "no extraGates warning"
+echo "$warn" | grep -q 'territory' && t_pass "warns about the missing territory file" || t_fail "no territory warning"
+echo "$warn" | grep -q 'example "docs" role' && t_pass "warns about the example docs role" || t_fail "no docs-role warning"
+clean="$(bash "$I" --target "$P" --check 2>&1)"; echo "$clean" | grep -q WARNING && t_fail "--check must not warn" || t_pass "a finished overlay (and --check) does not warn about the starter"
+
 t_done

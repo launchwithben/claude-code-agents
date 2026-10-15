@@ -5,6 +5,8 @@ All notable changes to this kit are listed here, newest first. The format follow
 ## [Unreleased]
 
 ### Fixed
+- **`install.sh` warns about the starter example left in place** (prefix `acme`, `pm.repo` `acme/widgets`, an `extraGates` script that does not exist, a missing `territory` or `skills` file, the example `docs` role). An agent installing the untouched `--init` output used to get a silent exit 0 with a fake gate and a fake PM repo baked into every role. Warnings, not errors; fixtures added. `--init` now says it writes a populated example.
+- AGENTS.md: the example-config trap, where AGENTS.md is read from, the `skills.txt` note, the real `kit-check` output and the `--check` path caveat.
 - Docs: MAINTENANCE.md, CONTRIBUTING.md and AGENTS.md said the kit makes no network calls, which stopped being true with the PM delta (it calls the user's own `gh`). They now say what is true: no telemetry, nothing sent anywhere, one script that uses `gh`.
 
 ## [0.2.0] - 2026-10-15

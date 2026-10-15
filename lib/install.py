@@ -428,6 +428,28 @@ def notes(cfg, target, scope, paths, fresh_agents, starters):
         print("Start the lead as the main chat: `claude --agent %s-lead` (a main-session seat is never dispatched as a subagent)." % cfg["prefix"])
 
 
+def unfinished(cfg, target):
+    """Things in the overlay that look like the starter example left in place. Warnings, never errors:
+    a real project may legitimately use any of them. (An agent installing the untouched starter used to get a
+    silent exit 0 with a fake gate and a fake PM repo baked into every role.)"""
+    out = []
+    pm = cfg.get("pm") or {}
+    if cfg.get("prefix") == "acme":
+        out.append('"prefix" is still "acme" (the example). Use a short word for your project.')
+    if "pm" in cfg["_roles"] and str(pm.get("repo") or "") == "acme/widgets":
+        out.append('pm.repo is still "acme/widgets" (the example). Set your own "owner/name" or drop the "pm" role.')
+    for g in (cfg.get("extraGates") or []):
+        m = re.match(r"^(?:bash|sh|node|python3?)\s+(\S+)", str(g))
+        if m and not os.path.exists(os.path.join(target, m.group(1))):
+            out.append('extraGates "%s" points at %s, which does not exist, so every role would be told to run it. Delete the key or add the script.' % (g, m.group(1)))
+    for key in ("territory", "skills"):
+        if cfg.get(key) and not os.path.exists(os.path.join(target, str(cfg[key]))):
+            out.append('"%s" points at %s, which does not exist. Create it, or delete the key to turn the feature off.' % (key, cfg[key]))
+    if any(e.get("name") == "docs" and "Technical writer for the docs site" in str(e.get("description")) for e in cfg["_extras"]):
+        out.append('extraRoles still holds the example "docs" role. Delete it or make it yours.')
+    return out
+
+
 def main():
     ap = argparse.ArgumentParser(prog="install.sh", description=__doc__.split("\n\n")[0])
     ap.add_argument("--target", default=os.getcwd(), help="project root (default: the current directory)")
@@ -442,7 +464,7 @@ def main():
         if os.path.exists(cfgpath):
             die("%s already exists" % cfgpath)
         write(cfgpath, read(os.path.join(KIT, "examples", "roles.config.json")))
-        print("wrote %s: set \"prefix\" and \"gate\", then run install.sh" % cfgpath)
+        print("wrote %s. It is a populated EXAMPLE, not a blank: set \"prefix\" and \"gate\", trim \"roles\" to what you use, and delete the keys that do not apply (extraGates, territory, skills, pm, extraRoles). install.sh warns about example values left in place." % cfgpath)
         return 0
     cfg = load_config(cfgpath)
     pin = str(cfg.get("kit") or "").lstrip("v")
@@ -452,6 +474,9 @@ def main():
     scope = cfg.get("scope") or "project"
     if scope not in ("project", "user"):
         die('"scope" must be "project" or "user"')
+    if not a.check:
+        for w in unfinished(cfg, target):
+            print("WARNING: " + w, file=sys.stderr)
     return check(cfg, target, scope) if a.check else install(cfg, target, scope)
 
 
