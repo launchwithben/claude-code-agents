@@ -37,7 +37,7 @@ for f in .claude/agents/acme-lead.md .claude/agents/acme-pm.md .claude/agents/ac
          scripts/roles-kit/bin/ask.sh scripts/roles-kit/bin/kit-check scripts/roles-kit/bin/roles-pulse.mjs; do
   [ -f "$P/$f" ] && t_pass "installed $f" || t_fail "installed $f"
 done
-t_eq 0.2.0 "$(cat "$P/scripts/roles-kit/VERSION")" "the kit version is recorded"
+t_eq 0.2.1 "$(cat "$P/scripts/roles-kit/VERSION")" "the kit version is recorded"
 echo "-- settings.json was MERGED, not overwritten"
 SJ="$P/.claude/settings.json"
 t_eq '["Bash(ls:*)"]' "$(jget "$SJ" 'json.dumps(d["permissions"]["allow"])')" "unrelated top-level keys survive"

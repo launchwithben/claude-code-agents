@@ -2,7 +2,7 @@
 
 All notable changes to this kit are listed here, newest first. The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and the project uses [Semantic Versioning](https://semver.org/). To hear about releases, use GitHub's **Watch → Custom → Releases**.
 
-## [Unreleased]
+## [0.2.1] - 2026-10-15
 
 ### Fixed
 - **`install.sh` warns about the starter example left in place** (prefix `acme`, `pm.repo` `acme/widgets`, an `extraGates` script that does not exist, a missing `territory` or `skills` file, the example `docs` role). An agent installing the untouched `--init` output used to get a silent exit 0 with a fake gate and a fake PM repo baked into every role. Warnings, not errors; fixtures added. `--init` now says it writes a populated example.
