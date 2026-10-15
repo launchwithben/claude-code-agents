@@ -1,0 +1,3 @@
+# <skill-name> | <description> | <doc>#<## heading prefix> [; <doc>#<heading>]...   (see build_skills.sh)
+# A generated skill replaces the starter of the same name that install.sh would otherwise write once.
+acme-build-rules | Acme build rules: the check command, git hygiene, the traps that already cost a day | docs/rules.md#The check; docs/rules.md#Git

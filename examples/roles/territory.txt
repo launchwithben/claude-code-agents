@@ -1,0 +1,16 @@
+# <role> <mode> <path>   - read by role-territory-guard (PreToolUse). First matching line wins.
+#   role  a role suffix (`dev` for `acme-dev`), a full role name, or `-` = owned by nobody (the lead keeps it)
+#   mode  all  = only the owner may read, search, edit, or brief an agent about these paths (a whole subsystem)
+#         edit = anyone may read; only the owner may change them (Edit/Write, a writing Bash command, an editing brief)
+#   path  relative to the project root; a prefix match, or "re:<regex>" searched in the root-relative path
+-     edit roles/
+-     edit .claude/
+-     edit tmp/
+-     edit docs/pm/
+docs  edit docs/
+ui    edit src/components/
+ui    edit src/styles/
+dev   edit scripts/
+dev   edit tests/
+dev   edit package.json
+dev   all  billing/
