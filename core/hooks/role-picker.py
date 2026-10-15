@@ -63,8 +63,9 @@ def main():
         print("- %s: %s" % (r, d))
     for r, d in mine.items():
         print("- %s (main-session seat, never dispatched): %s" % (r, d))
-        print("    start it as the chat itself: CLI `claude --agent %s`; desktop app: in a new chat run `/%s-rules` "
-              "(or `/lead-agent` if your setup has it) to load its rules." % (r, r))
+        route = (cfg.get("lead") or {}).get("appRoute") if isinstance(cfg.get("lead"), dict) else None
+        app = "`%s`" % route if route else "run `/%s-rules` in a new chat" % r
+        print("    start it as the chat itself: CLI `claude --agent %s`; desktop app: %s to load its rules." % (r, app))
     print("Tell the owner they can skip this menu next time by typing @agent-<role> <task>.")
     print("</role-picker>")
     return 0

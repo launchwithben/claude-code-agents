@@ -9,7 +9,7 @@ Why a seat and not a subagent: a subagent cannot spawn the other roles, and the 
 | Where | How |
 |---|---|
 | CLI | `claude --agent <prefix>-lead` |
-| Desktop app | open a chat and run `/<prefix>-lead-rules` (the rules skill is user-invocable; `/lead-agent` works too if your setup has such a skill) |
+| Desktop app | open a chat and run `/<prefix>-lead-rules` (the rules skill is user-invocable), or the command in the overlay's `lead.appRoute` if you have your own |
 | Not possible | `Agent(subagent_type: "<prefix>-lead")`. The routing guard denies it and says how to start it properly. |
 
 A brand-new agents folder needs a session restart before `--agent` can see it.
@@ -37,7 +37,7 @@ Never in a parallel lane: schema migrations, scorer or extractor version bumps, 
 
 ## The heartbeat
 
-A `Stop` hook, declared in the lead's own agent file so it applies to that chat only. When the lead is about to stop its turn and **nothing is running** but there is finished-unlanded work, or a launchable chain under `## Ready chains` in the chains file, it blocks **once** with "land X / dispatch Y". The same state (session plus ledger and chains signature) never blocks twice, so the lead can always answer "idle, nothing to do" next time. It is keyed by `session_id`: a session that never dispatched is never nudged. If a scheduler is available (a recurring prompt), the lead sets an hourly check at session start; that is session-only and fires only while idle.
+A `Stop` hook, declared in the lead's own agent file so it applies to that chat only. When the lead is about to stop its turn and **nothing is running** but there is finished-unlanded work, or a launchable chain under `## Ready chains` in the chains file, it blocks **once** with "land X / dispatch Y". The same state (session plus ledger and chains signature) never blocks twice, so the lead can always answer "idle, nothing to do" next time. It is keyed by `session_id`: a session that never dispatched is never nudged. Because a desktop-app chat cannot be started *as* an agent, set `lead.hookScope: "project"` in the overlay and the installer registers the recorder and the heartbeat in `settings.json` for every session instead; the key makes that safe for sessions that are not the lead. If a scheduler is available (a recurring prompt), the lead sets an hourly check at session start; that is session-only and fires only while idle.
 
 ## Modes
 

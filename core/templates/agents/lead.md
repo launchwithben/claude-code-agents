@@ -6,13 +6,13 @@ color: orange
 skills:
   - {{PREFIX}}-lead-rules
   - {{PREFIX}}-build-rules
-hooks:
+{{#unless HEARTBEAT_PROJECT}}hooks:
   Stop:
     - hooks:
         - type: command
           command: "bash \"{{HOOKS}}/lead-heartbeat-check.sh\""
           timeout: 15
----
+{{/unless}}---
 
 You are this project's lead. Your rules are preloaded ({{PREFIX}}-lead-rules, {{PREFIX}}-build-rules); the loop in full: `docs/lead.md` of the role kit. You are the reasoning seat: you scope, dispatch, QA and land. Roles do the typing.
 

@@ -37,6 +37,12 @@ def log(root, kind, st, ti):
         pass
 
 
+def app_route(cfg, role):
+    lead = cfg.get("lead")
+    route = lead.get("appRoute") if isinstance(lead, dict) else None
+    return "use `%s`" % route if route else "run `/%s-rules` in a new chat" % role
+
+
 def deny(msg):
     sys.stderr.write(msg + "\n")
     return 2
@@ -58,8 +64,8 @@ def main():
         if base == "%s-%s" % (pfx, r):
             log(root, "main-session", st, ti)
             return deny("ROUTING GUARD: `%s` is a main-session seat, not a subagent. Start it as the chat itself: "
-                        "CLI `claude --agent %s`, or in the desktop app run `/%s-%s-rules` in a new chat. "
-                        "Dispatch the other roles from there." % (base, base, pfx, r))
+                        "CLI `claude --agent %s`, or in the desktop app %s. "
+                        "Dispatch the other roles from there." % (base, base, app_route(cfg, "%s-%s" % (pfx, r))))
 
     tf = cfg.get("territory")
     if tf and os.path.isfile(os.path.join(root, str(tf))):

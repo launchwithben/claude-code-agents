@@ -37,7 +37,7 @@ for f in .claude/agents/acme-lead.md .claude/agents/acme-pm.md .claude/agents/ac
          scripts/roles-kit/bin/ask.sh scripts/roles-kit/bin/kit-check scripts/roles-kit/bin/roles-pulse.mjs; do
   [ -f "$P/$f" ] && t_pass "installed $f" || t_fail "installed $f"
 done
-t_eq 0.2.0 "$(cat "$P/scripts/roles-kit/VERSION")" "the kit version is recorded"
+t_eq 0.2.1 "$(cat "$P/scripts/roles-kit/VERSION")" "the kit version is recorded"
 echo "-- settings.json was MERGED, not overwritten"
 SJ="$P/.claude/settings.json"
 t_eq '["Bash(ls:*)"]' "$(jget "$SJ" 'json.dumps(d["permissions"]["allow"])')" "unrelated top-level keys survive"
@@ -150,5 +150,61 @@ echo "$warn" | grep -q 'scripts/preflight.sh' && t_pass "warns about the gate sc
 echo "$warn" | grep -q 'territory' && t_pass "warns about the missing territory file" || t_fail "no territory warning"
 echo "$warn" | grep -q 'example "docs" role' && t_pass "warns about the example docs role" || t_fail "no docs-role warning"
 clean="$(bash "$I" --target "$P" --check 2>&1)"; echo "$clean" | grep -q WARNING && t_fail "--check must not warn" || t_pass "a finished overlay (and --check) does not warn about the starter"
+
+echo "-- v0.2.1: lead.hookScope \"project\" registers the recorder and the heartbeat for every session"
+cfgset() { python3 - "$1" "$2" <<'PY'
+import json,sys
+c=json.load(open(sys.argv[1])); exec(sys.argv[2]); json.dump(c,open(sys.argv[1],"w"))
+PY
+}
+H1="$S/hs"; mkrepo "$H1"
+cfgset "$H1/roles.config.json" 'c["lead"]["hookScope"]="project"; c["lead"]["appRoute"]="/lead-agent"'
+bash "$I" --target "$H1" >/dev/null 2>&1; t_eq 0 "$?" "install with hookScope project"
+HS="$H1/.claude/settings.json"
+t_eq 1 "$(jget "$HS" 'sum(1 for e in d["hooks"].get("Stop",[]) for h in e["hooks"] if "lead-heartbeat-check" in h["command"])')" "the heartbeat is registered as a Stop hook in settings.json"
+t_eq 1 "$(jget "$HS" 'sum(1 for e in d["hooks"].get("PostToolUse",[]) for h in e["hooks"] if "lead-inflight-record" in h["command"])')" "the recorder is registered on PostToolUse"
+grep -q 'lead-heartbeat-check' "$H1/.claude/agents/acme-lead.md" && t_fail "the lead agent file must not ALSO carry the heartbeat" || t_pass "the lead agent file no longer carries the heartbeat (no double fire)"
+head -3 "$H1/.claude/agents/acme-lead.md" | grep -q '^name: acme-lead$' && sed -n '/^---$/,$p' "$H1/.claude/agents/acme-lead.md" | sed -n 2,12p | grep -q '^color: orange$' && t_pass "and its frontmatter is still valid" || t_fail "lead frontmatter"
+grep -q 'use `/lead-agent`' "$H1/.claude/skills/roles/SKILL.md" && t_pass "lead.appRoute is used verbatim in the roles menu skill" || t_fail "appRoute in roles skill"
+bash "$I" --target "$H1" --check >/dev/null 2>&1; t_eq 0 "$?" "--check clean"
+bash "$I" --target "$H1" >/dev/null 2>&1; t_eq 1 "$(jget "$HS" 'sum(1 for e in d["hooks"].get("Stop",[]) for h in e["hooks"] if "lead-heartbeat-check" in h["command"])')" "re-install does not duplicate it"
+if command -v node >/dev/null 2>&1; then
+  scmd="$(jget "$HS" '[h["command"] for e in d["hooks"]["Stop"] for h in e["hooks"] if "lead-heartbeat-check" in h["command"]][0]')"
+  stop() { python3 -c 'import json,sys;print(json.dumps({"hook_event_name":"Stop","session_id":sys.argv[1],"stop_hook_active":False}))' "$1" | CLAUDE_PROJECT_DIR="$H1" bash -c "$scmd" >/dev/null 2>&1; }
+  mkdir -p "$H1/tmp/lead"; NOW="$(date -u +%Y-%m-%dT%H:%M:%SZ)"
+  stop sNever; t_eq 0 "$?" "a session that never dispatched is not nudged (empty ledger)"
+  printf '{"ev":"dispatch","time":"%s","agent_id":"ag1","subagent_type":"acme-dev","description":"d","issue":9,"session_id":"sLead"}\n{"ev":"done","time":"%s","agent_id":"ag1","commit":"deadbee0000000000000000000000000000000","branch":"b"}\n' "$NOW" "$NOW" > "$H1/tmp/lead/inflight.jsonl"
+  stop sNever; t_eq 0 "$?" "still not nudged once ANOTHER session has finished-unlanded work"
+  stop sLead;  t_eq 2 "$?" "the dispatching session with finished-unlanded work is blocked once"
+  stop sLead;  t_eq 0 "$?" "and released on the same state"
+fi
+A1="$S/as"; mkrepo "$A1"; bash "$I" --target "$A1" >/dev/null 2>&1
+t_eq 0 "$(jget "$A1/.claude/settings.json" 'len(d["hooks"].get("Stop",[]))')" "default hookScope is agent: nothing is registered as a Stop hook in settings.json"
+grep -q 'lead-heartbeat-check' "$A1/.claude/agents/acme-lead.md" && t_pass "the heartbeat stays on the lead agent file" || t_fail "agent-scope heartbeat"
+cfgset "$A1/roles.config.json" 'c["lead"]["hookScope"]="everywhere"'
+bash "$I" --target "$A1" >/dev/null 2>&1; t_eq 1 "$?" "an unknown hookScope is refused"
+
+echo "-- v0.2.1: per-role body files for built-ins; collisions; extra lead rules"
+R1="$S/rb"; mkrepo "$R1"
+mkdir -p "$R1/docs"; printf '## My PM procedure\nStep one is mine.\n' > "$R1/docs/pm.md"; printf 'Replacement body for dev.\n' > "$R1/docs/dev.md"; printf -- '- Never deploy on Fridays.\n' > "$R1/docs/lead-extra.md"
+cfgset "$R1/roles.config.json" 'c["roles"]={"lead":{},"pm":{"bodyFile":"docs/pm.md"},"dev":{"bodyFile":"docs/dev.md","bodyMode":"replace"}}; c["lead"]["extraRulesFile"]="docs/lead-extra.md"; c.pop("extraRoles",None)'
+bash "$I" --target "$R1" >/dev/null 2>&1; t_eq 0 "$?" "roles as an object installs"
+grep -q 'My PM procedure' "$R1/.claude/agents/acme-pm.md" && grep -q 'Delta first' "$R1/.claude/agents/acme-pm.md" && t_pass "append: the kit body stays and the project text follows it" || t_fail "append mode"
+grep -q 'Replacement body for dev' "$R1/.claude/agents/acme-dev.md" && ! grep -q 'Before you edit' "$R1/.claude/agents/acme-dev.md" && head -1 "$R1/.claude/agents/acme-dev.md" | grep -q '^---$' && grep -q '^name: acme-dev$' "$R1/.claude/agents/acme-dev.md" && t_pass "replace: frontmatter kept, kit body replaced" || t_fail "replace mode"
+[ -f "$R1/.claude/agents/acme-ui.md" ] && t_fail "a role not listed must not install" || t_pass "only the listed roles install"
+grep -q 'Never deploy on Fridays' "$R1/.claude/skills/acme-lead-rules/SKILL.md" && grep -q '^## Project rules' "$R1/.claude/skills/acme-lead-rules/SKILL.md" && t_pass "lead.extraRulesFile is appended to the lead rules" || t_fail "extraRulesFile"
+grep -q 'archive it' "$R1/.claude/skills/acme-lead-rules/SKILL.md" && grep -q 'EVERY "blocked" claim' "$R1/.claude/skills/acme-lead-rules/SKILL.md" && grep -q 'ALWAYS while the owner is away' "$R1/.claude/skills/acme-lead-rules/SKILL.md" && t_pass "the generic lead rules carry vehicle choice, archive, and blocked-claim verification" || t_fail "generic lead rules"
+bash "$I" --target "$R1" --check >/dev/null 2>&1; t_eq 0 "$?" "--check clean with body files"
+printf 'changed\n' >> "$R1/docs/pm.md"
+bash "$I" --target "$R1" --check >/dev/null 2>&1; t_eq 1 "$?" "editing the body file shows as drift until re-installed"
+cfgset "$R1/roles.config.json" 'c["roles"]["pm"]["bodyFile"]="docs/missing.md"'
+out="$(bash "$I" --target "$R1" 2>&1)"; t_eq 1 "$?" "a missing bodyFile is refused"
+case "$out" in *"docs/missing.md"*"not found"*) t_pass "with the file named";; *) t_fail "bodyFile message: $out";; esac
+cfgset "$R1/roles.config.json" 'c["roles"]["pm"]={"bodyMode":"sideways"}'
+bash "$I" --target "$R1" >/dev/null 2>&1; t_eq 1 "$?" "an unknown bodyMode is refused"
+C1="$S/coll"; mkrepo "$C1"
+cfgset "$C1/roles.config.json" 'c["extraRoles"]=[{"name":"pm","description":"my own pm"}]'
+out="$(bash "$I" --target "$C1" 2>&1)"; t_eq 1 "$?" "an extraRoles entry named like a built-in is refused"
+case "$out" in *"collides with the built-in role"*'"roles": {"pm"'*) t_pass "and the message says how to change a built-in instead";; *) t_fail "collision message: $out";; esac
 
 t_done

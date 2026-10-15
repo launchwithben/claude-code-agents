@@ -28,6 +28,10 @@ out="$(p '@agent-acme')"
 case "$out" in *"- acme-dev:"*"- acme-ui:"*) t_pass "menu lists the dispatchable roles";; *) t_fail "menu lists the dispatchable roles";; esac
 case "$out" in *"acme-lead (main-session seat, never dispatched)"*"claude --agent acme-lead"*) t_pass "lead is shown as a chat seat with the CLI start line";; *) t_fail "lead start line";; esac
 case "$out" in *"/acme-lead-rules"*) t_pass "desktop start hint names the lead rules skill";; *) t_fail "desktop start hint";; esac
+printf '{"prefix":"acme","lead":{"appRoute":"/lead-agent"}}' > "$T_ROOT/roles.config.json"
+out="$(p '@agent-acme')"
+case "$out" in *'desktop app: `/lead-agent` to load'*) t_pass "lead.appRoute is used verbatim for the desktop start line";; *) t_fail "appRoute verbatim: $out";; esac
+case "$out" in *"acme-lead-rules"*) t_fail "the default route leaked next to a configured appRoute";; *) t_pass "and the default route is not printed";; esac
 printf 'garbage' | bash "$H" >/dev/null 2>&1;  t_eq 0 "$?" "garbage stdin exits 0"
 out="$(printf 'garbage' | bash "$H" 2>&1)"; t_eq "" "$out" "garbage stdin is silent"
 printf '{"prompt":' | bash "$H" >/dev/null 2>&1; t_eq 0 "$?" "truncated JSON exits 0"

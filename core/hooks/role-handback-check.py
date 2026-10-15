@@ -4,7 +4,7 @@
 Blocks (exit 2, message on stderr) unless the evidence the role's contract names is in `last_assistant_message`.
 Contracts come from roles.config.json ("handback": {"<suffix or full role name>": ["gate", "screenshots", ...]});
 defaults: dev [gate], ui [gate, screenshots], concept [screenshots, concept-note], pm [cursor]. A role whose
-suffix has no contract is allowed. Evidence kinds: gate, screenshots, concept-note, cursor, commit, line:NAME.
+suffix has no contract is allowed. Evidence kinds: gate, screenshots, concept-note, cursor, commit, line:NAME, line:NAME~REGEX.
 Any role may instead end with `GATE-SKIPPED: <reason>`.
 Fails OPEN on its own errors and lets an agent through after 2 consecutive blocks.
 """
@@ -27,11 +27,20 @@ EVIDENCE = {
 
 
 def evidence(kind):
+    """-> (regex, message) or None. `line:NAME` wants a `NAME: <something>` line; `line:NAME~REGEX` wants the text
+    after `NAME:` to match REGEX (e.g. `line:CURSOR~\\S+ -> ACKED`). A regex that does not compile is ignored (fail open)."""
     if kind in EVIDENCE:
         return EVIDENCE[kind]
-    m = re.match(r"^line:([A-Za-z][A-Za-z0-9_-]*)$", kind)
+    m = re.match(r"^line:([A-Za-z][A-Za-z0-9_-]*)(?:~(.+))?$", kind)
     if m:
-        return (r"^\s*" + re.escape(m.group(1)) + r":\s*\S+", "a line `" + m.group(1) + ": <value>`")
+        name, pat = m.group(1), m.group(2)
+        if pat is None:
+            return (r"^\s*" + re.escape(name) + r":\s*\S+", "a line `" + name + ": <value>`")
+        try:
+            re.compile(pat)
+        except re.error:
+            return None
+        return (r"^\s*" + re.escape(name) + r":\s*(?:" + pat + ")", "a line `" + name + ": ...` matching /" + pat + "/")
     return None
 
 
