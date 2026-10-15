@@ -1,0 +1,11 @@
+#!/usr/bin/env bash
+# kit-check - every fixture of this kit: the core hooks and scripts (core/hooks, core/bin) plus the installer
+# (tests/install.test.sh). Run it before every commit to the kit.   bash kit-check
+# In an installed project the same core fixtures run as: bash scripts/roles-kit/bin/kit-check
+here="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+bash "$here/core/bin/kit-check"; rc=$?
+out="$(bash "$here/tests/install.test.sh" 2>&1)"; irc=$?
+last="$(printf '%s\n' "$out" | tail -1)"
+if [ "$irc" = 0 ] && [ "$last" = "ALL PASS" ]; then echo "PASS  install.test.sh"; else echo "FAIL  install.test.sh"; printf '%s\n' "$out" | grep -E 'FAIL' | head -10 | sed 's/^/        /'; rc=1; fi
+[ "$rc" = 0 ] && echo "kit-check (kit $(cat "$here/VERSION")): GREEN" || echo "kit-check: RED"
+exit $rc

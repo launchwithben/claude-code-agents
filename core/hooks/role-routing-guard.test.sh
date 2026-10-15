@@ -1,0 +1,47 @@
+#!/usr/bin/env bash
+# Fixtures for role-routing-guard (the prompt-regex FALLBACK for repos without a territory file).
+#   bash core/hooks/role-routing-guard.test.sh
+here="$(cd "$(dirname "$0")" && pwd)"
+source "$here/_testlib.sh"
+t_syntax "$here/role-routing-guard.sh" "$here/role-routing-guard.py"
+G="$here/role-routing-guard.sh"
+t_proj '{"prefix":"acme"}'
+check() { # <want-exit> <label> <subagent_type> <prompt>
+  python3 -c 'import json,sys;print(json.dumps({"tool_name":"Agent","tool_input":{"subagent_type":sys.argv[1],"prompt":sys.argv[2]}}))' "$3" "$4" | "$G" >/dev/null 2>&1
+  t_eq "$1" "$?" "$2"
+}
+echo "-- must DENY (exit 2)"
+check 2 "bulk-worker edits a component"        bulk-worker "Edit src/components/Hero.astro to add a toggle above the picks"
+check 2 "general-purpose restyles with CSS"     general-purpose "Restyle the pricing table: update the CSS in src/styles/global.css"
+check 2 "full-stack-developer builds design"    full-stack-developer "Build a new design for the homepage hero section"
+check 2 "plugin-prefixed generic worker"        daily-skills:bulk-worker "Fix the tailwind classes in the nav component and update the stylesheet"
+check 2 "empty subagent_type (default)"         "" "Redesign the footer layout, edit footer.astro"
+check 2 "generic worker restores content titles" bulk-worker "Restore the translated page titles in src/content/posts and commit"
+check 2 "generic worker edits a script"         general-purpose "Fix the off-by-one in scripts/build-feed.mjs and commit with Refs #1"
+check 2 "generic worker updates a json file"    bulk-worker "Update pricing.json so the pro plan says 29"
+check 2 "the lead seat is never a subagent"     acme-lead "Plan the week"
+check 2 "plugin-prefixed lead dispatch"         "plug:acme-lead" "Plan the week"
+echo "-- must ALLOW (exit 0)"
+check 0 "summary with no repo path"             bulk-worker "Query the database for signups and write a summary of conversion by channel"
+check 0 "read-only audit naming paths"          bulk-worker "Audit scripts/gates/*.mjs for unwired gates. Read-only, report only."
+check 0 "read-only call-site map"               bulk-worker "Map every call site of PricingCard in src/components. Read-only, do not edit anything."
+check 0 "code-style word is not a UI task"      bulk-worker "Describe the code style and export style of this repo and write a summary"
+check 0 "role-ui may edit UI"                   acme-ui "Edit src/components/Hero.astro to add a toggle"
+check 0 "role-dev non-UI script"                acme-dev "Add a gate script under scripts/gates and wire it into the check"
+check 0 "generic worker, UI noun but no verb"   general-purpose "List which .astro files import Icon.astro"
+check 0 "role-concept direction question"       acme-concept "Show 3 ways the pricing toggle could work in the design"
+check 0 "pm may be dispatched"                  acme-pm "Triage the board delta"
+echo "-- a configured generic list is honoured"
+printf '{"prefix":"acme","genericAgents":["my-worker"]}' > "$T_ROOT/roles.config.json"
+check 2 "custom generic worker is policed"      my-worker "Fix scripts/x.sh and commit"
+check 0 "default generic names no longer are"   bulk-worker "Fix scripts/x.sh and commit"
+echo "-- stands down when a territory file exists"
+printf '{"prefix":"acme","territory":"roles/territory.txt"}' > "$T_ROOT/roles.config.json"
+mkdir -p "$T_ROOT/roles"; echo "dev edit scripts/" > "$T_ROOT/roles/territory.txt"
+check 0 "generic worker edit passes this hook (the territory guard judges it)" bulk-worker "Fix scripts/x.sh and commit"
+check 2 "the lead-seat rule still applies"      acme-lead "Plan the week"
+echo "-- fail open"
+printf 'not json' | "$G" >/dev/null 2>&1;     t_eq 0 "$?" "garbage stdin"
+printf '' | "$G" >/dev/null 2>&1;             t_eq 0 "$?" "empty stdin"
+printf '{"tool_input": ' | "$G" >/dev/null 2>&1; t_eq 0 "$?" "truncated JSON"
+t_done

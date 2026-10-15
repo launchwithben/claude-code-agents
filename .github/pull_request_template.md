@@ -1,6 +1,6 @@
 **What and why:**
 
-- [ ] `bash -n` passes on any script I touched
-- [ ] `for t in scripts/hooks/*.test.sh; do bash "$t" | tail -1; done` prints `ALL PASS` three times
-- [ ] I added a fixture for any hook change
-- [ ] CHANGELOG.md has an entry
+- [ ] `bash kit-check` prints `GREEN`
+- [ ] I added a fixture that fails without my change (and it starts with the syntax check)
+- [ ] CHANGELOG.md has an entry; `VERSION` is bumped if behaviour or the overlay changed
+- [ ] Nothing project-specific (names, paths, ids) is in the diff

@@ -1,0 +1,47 @@
+{
+  "kit": "0.2.0",
+  "prefix": "acme",
+  "scope": "project",
+  "roles": ["lead", "pm", "dev", "ui", "concept"],
+  "gate": "npm run check",
+  "extraGates": ["bash scripts/preflight.sh"],
+  "mainBranch": "main",
+
+  "territory": "roles/territory.txt",
+  "skills": "roles/skills.txt",
+  "chains": "docs/pm/chains.md",
+
+  "genericAgents": ["bulk-worker", "general-purpose", "full-stack-developer", "haiku-worker", "claude"],
+
+  "handback": {
+    "dev": ["gate"],
+    "ui": ["gate", "screenshots"],
+    "concept": ["screenshots", "concept-note"],
+    "pm": ["cursor"]
+  },
+
+  "lead": {
+    "shipStep": "ship to the preview environment and verify it",
+    "promoteRule": "Production deploys only on the owner's word, or when something is broken and losing money now; preview is yours."
+  },
+
+  "pm": {
+    "repo": "acme/widgets",
+    "cursor": "docs/pm/state.json",
+    "readyLabel": "agent-ready",
+    "readFirst": ["docs/board-notes.md"],
+    "rules": ["Titles are bare imperatives, at most 72 characters.", "Never set the Priority field: it is the owner's."]
+  },
+
+  "extraRoles": [
+    {
+      "name": "docs",
+      "description": "Technical writer for the docs site. Edits docs/ only, runs the docs build, commits in its own worktree, reports, and stops.",
+      "routes": "documentation",
+      "model": "sonnet",
+      "worktree": true,
+      "contract": ["gate"],
+      "body": ["You are this project's docs role. Edit files under docs/ only.", "Run the docs build, commit with a pathspec, report with a GATE line, and STOP."]
+    }
+  ]
+}
