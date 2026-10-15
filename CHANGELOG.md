@@ -2,6 +2,11 @@
 
 All notable changes to this kit are listed here, newest first. The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and the project uses [Semantic Versioning](https://semver.org/). To hear about releases, use GitHub's **Watch → Custom → Releases**.
 
+## [Unreleased]
+
+### Fixed
+- Docs: MAINTENANCE.md, CONTRIBUTING.md and AGENTS.md said the kit makes no network calls, which stopped being true with the PM delta (it calls the user's own `gh`). They now say what is true: no telemetry, nothing sent anywhere, one script that uses `gh`.
+
 ## [0.2.0] - 2026-10-15
 
 The kit becomes the single master copy: projects install a pinned version and keep only a small overlay. **Breaking: the repo layout and every install path changed** (see "Changed"); a 0.1.0 install is replaced by running `install.sh`.

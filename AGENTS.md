@@ -30,4 +30,4 @@ A set of Claude Code subagents rendered from templates with the project's prefix
 - Every change that alters behaviour gets a `CHANGELOG.md` entry and, when it ships, a `VERSION` bump and a release tag. How a fix found in a consuming project flows back: `MAINTENANCE.md`.
 - Nothing project-specific enters this repo: no client names, absolute paths, board ids or product rules, in code, fixtures or docs. Those are overlay config.
 - Keep the status line at the top of `README.md` and `MAINTENANCE.md` true. If the project is being sunset, follow the four steps in `MAINTENANCE.md` in order and do not archive the repo without the owner's say-so.
-- Never add telemetry, network calls or dependencies. The README and the launchwithben.com write-up promise there are none.
+- Never add telemetry, dependencies or new network calls. The README promises there is no telemetry and nothing is sent anywhere; the only network use is the PM delta calling the user's own `gh`.

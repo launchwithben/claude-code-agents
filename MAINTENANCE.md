@@ -23,7 +23,7 @@ A project that finds a bug while a fix is urgent may carry a temporary local pat
 - **Newsletter:** the free [AI Boss newsletter](https://launchwithben.com/newsletter) carries a note when something here changes in a way that matters.
 
 ## How I learn how it is used
-Nothing in this kit phones home: no telemetry, no network calls, no tracking. I find out from GitHub itself (stars, forks, issues, clones) and from what you tell me. If you use it, the "Report a result" issue template takes one minute and is the most useful thing you can send.
+Nothing in this kit phones home: no telemetry, no tracking, nothing is sent to me or anyone else. The one part that touches the network is the PM delta, which calls the `gh` you already have to read your own board, and only when you run it. I find out from GitHub itself (stars, forks, issues, clones) and from what you tell me. If you use it, the "Report a result" issue template takes one minute and is the most useful thing you can send.
 
 ## Reviews
 The kit is reviewed on a fixed schedule. The first review is **2026-12-14**. At each review it is marked one of: **Active**, **Maintenance only** (security and breakage fixes, no new features) or **Sunset**.
