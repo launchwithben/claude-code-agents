@@ -37,7 +37,7 @@ for f in .claude/agents/acme-lead.md .claude/agents/acme-pm.md .claude/agents/ac
          scripts/roles-kit/bin/ask.sh scripts/roles-kit/bin/kit-check scripts/roles-kit/bin/roles-pulse.mjs; do
   [ -f "$P/$f" ] && t_pass "installed $f" || t_fail "installed $f"
 done
-t_eq 0.2.1 "$(cat "$P/scripts/roles-kit/VERSION")" "the kit version is recorded"
+t_eq 0.2.2 "$(cat "$P/scripts/roles-kit/VERSION")" "the kit version is recorded"
 echo "-- settings.json was MERGED, not overwritten"
 SJ="$P/.claude/settings.json"
 t_eq '["Bash(ls:*)"]' "$(jget "$SJ" 'json.dumps(d["permissions"]["allow"])')" "unrelated top-level keys survive"
@@ -151,7 +151,7 @@ echo "$warn" | grep -q 'territory' && t_pass "warns about the missing territory 
 echo "$warn" | grep -q 'example "docs" role' && t_pass "warns about the example docs role" || t_fail "no docs-role warning"
 clean="$(bash "$I" --target "$P" --check 2>&1)"; echo "$clean" | grep -q WARNING && t_fail "--check must not warn" || t_pass "a finished overlay (and --check) does not warn about the starter"
 
-echo "-- v0.2.1: lead.hookScope \"project\" registers the recorder and the heartbeat for every session"
+echo "-- v0.2.2: lead.hookScope \"project\" registers the recorder and the heartbeat for every session"
 cfgset() { python3 - "$1" "$2" <<'PY'
 import json,sys
 c=json.load(open(sys.argv[1])); exec(sys.argv[2]); json.dump(c,open(sys.argv[1],"w"))
@@ -184,7 +184,7 @@ grep -q 'lead-heartbeat-check' "$A1/.claude/agents/acme-lead.md" && t_pass "the 
 cfgset "$A1/roles.config.json" 'c["lead"]["hookScope"]="everywhere"'
 bash "$I" --target "$A1" >/dev/null 2>&1; t_eq 1 "$?" "an unknown hookScope is refused"
 
-echo "-- v0.2.1: per-role body files for built-ins; collisions; extra lead rules"
+echo "-- v0.2.2: per-role body files for built-ins; collisions; extra lead rules"
 R1="$S/rb"; mkrepo "$R1"
 mkdir -p "$R1/docs"; printf '## My PM procedure\nStep one is mine.\n' > "$R1/docs/pm.md"; printf 'Replacement body for dev.\n' > "$R1/docs/dev.md"; printf -- '- Never deploy on Fridays.\n' > "$R1/docs/lead-extra.md"
 cfgset "$R1/roles.config.json" 'c["roles"]={"lead":{},"pm":{"bodyFile":"docs/pm.md"},"dev":{"bodyFile":"docs/dev.md","bodyMode":"replace"}}; c["lead"]["extraRulesFile"]="docs/lead-extra.md"; c.pop("extraRoles",None)'

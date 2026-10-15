@@ -2,7 +2,7 @@
 
 **Turn one Claude Code chat into a team of specialists.**
 
-> **Status: Active.** Maintained by [Launch With Ben](https://launchwithben.com). See [MAINTENANCE.md](MAINTENANCE.md) for what that means, how to hear about updates, and what happens if it is ever sunset. Changes are in [CHANGELOG.md](CHANGELOG.md). Current version: **0.2.1**.
+> **Status: Active.** Maintained by [Launch With Ben](https://launchwithben.com). See [MAINTENANCE.md](MAINTENANCE.md) for what that means, how to hear about updates, and what happens if it is ever sunset. Changes are in [CHANGELOG.md](CHANGELOG.md). Current version: **0.2.2**.
 
 A lead, a project manager, a developer, a UI builder and a concept designer, each with its own scope, its own rules and (for the roles that edit code) its own copy of the repo. You talk to the lead. It scopes the work, files one issue per unit, sends every job to the right specialist in parallel, reads the diff that comes back and merges it. A role cannot hand back without showing its check result, or the reason it had none.
 
@@ -43,7 +43,7 @@ Requirements: Claude Code, `bash`, `python3` (hooks and installer, stdlib only),
 
 ```bash
 # 1. get the kit at a tag, next to your project (not inside it)
-git clone --branch v0.2.1 https://github.com/launchwithben/claude-code-agents ../claude-code-agents
+git clone --branch v0.2.2 https://github.com/launchwithben/claude-code-agents ../claude-code-agents
 
 # 2. from your project root: write a starter overlay, then edit it
 bash ../claude-code-agents/install.sh --init
@@ -74,7 +74,7 @@ cd - && bash ../claude-code-agents/install.sh --check                   # what w
 bash ../claude-code-agents/install.sh                                   # apply it
 ```
 
-`install.sh --check` renders everything again in memory and compares it with what is on disk. It exits 1 and lists `MISSING`, `DRIFT` (a core file or rendered agent differs from the kit, including a local edit) or `STALE` (a file the new kit no longer ships), plus any generated skill that no longer matches its doc and any kit hook missing from `settings.json`. Pin the version in the overlay (`"kit": "0.2.1"`) and the installer refuses a checkout of a different version.
+`install.sh --check` renders everything again in memory and compares it with what is on disk. It exits 1 and lists `MISSING`, `DRIFT` (a core file or rendered agent differs from the kit, including a local edit) or `STALE` (a file the new kit no longer ships), plus any generated skill that no longer matches its doc and any kit hook missing from `settings.json`. Pin the version in the overlay (`"kit": "0.2.2"`) and the installer refuses a checkout of a different version.
 
 **Never edit installed core files in place** (`scripts/roles-kit/`, `.claude/agents/<prefix>-*.md`): the next install overwrites them. Change the overlay, or change the kit (see [MAINTENANCE.md](MAINTENANCE.md) for how a fix found in a project flows back here).
 
