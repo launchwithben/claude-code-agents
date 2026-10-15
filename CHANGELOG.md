@@ -2,6 +2,23 @@
 
 All notable changes to this kit are listed here, newest first. The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and the project uses [Semantic Versioning](https://semver.org/). To hear about releases, use GitHub's **Watch → Custom → Releases**.
 
+## [0.2.2] - 2026-10-15
+
+Five gaps found migrating the first real project onto the kit (#11). No breaking changes; re-run `install.sh`. (The v0.2.1 tag's README header line has a version typo; it is fixed here.)
+
+### Added
+- **Pattern evidence in handback contracts:** `line:NAME~REGEX`. A PM run that did not ack its cursor (`CURSOR: <ts> -> ACKED`) can now be blocked; `cursor` alone only wanted any value. A regex that does not compile is ignored (fail open).
+- **`lead.appRoute`:** how the desktop app starts the lead (e.g. `/lead-agent`), used verbatim by the picker, the roles menu skill and the routing guard.
+- **`lead.hookScope`: `"agent"` (default) or `"project"`.** `project` registers the in-flight recorder (PostToolUse) and the heartbeat (Stop) in `settings.json` for every session, and the lead agent file stops carrying its own copy. Both are keyed by `session_id`, so a session that never dispatched is never nudged.
+- **Per-role body files for built-ins:** `"roles": {"pm": {"bodyFile": "...", "bodyMode": "append" | "replace"}}`. A project keeps its own PM procedure in the agent file instead of a side doc.
+- **`lead.extraRulesFile`:** appended to the lead rules as "Project rules".
+- **`build_skills.sh` 4th column** declares extra frontmatter (`user-invocable: true`), so a lead-rules skill can be generated from docs.
+
+### Changed
+- The lead-rules template now carries the generic rules that were left out: visible child session vs background agent (always background when the owner is away; archive a child session after landing), and verify EVERY "blocked" claim before accepting it.
+- An `extraRoles` entry that collides with a built-in name is refused with a message saying how to change a built-in instead.
+- The roles menu skill no longer hardcodes the desktop start route.
+
 ## [0.2.1] - 2026-10-15
 
 ### Fixed

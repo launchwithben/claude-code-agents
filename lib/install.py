@@ -72,17 +72,38 @@ def load_config(path):
     if not re.match(r"^[a-z][a-z0-9]*(-[a-z0-9]+)*$", str(cfg.get("prefix") or "")):
         die('"prefix" is required in %s: lowercase words joined by dashes, e.g. "acme"' % path)
     roles = cfg.get("roles", ALL_ROLES)
+    opts = {}
+    if isinstance(roles, dict):  # {"pm": {"bodyFile": "...", "bodyMode": "append|replace"}}: per-role options
+        for k, o in roles.items():
+            if o is None:
+                o = {}
+            if not isinstance(o, dict):
+                die('"roles.%s" must be an object like {"bodyFile": "docs/x.md", "bodyMode": "append"}' % k)
+            if o.get("bodyMode", "append") not in ("append", "replace"):
+                die('"roles.%s.bodyMode" must be "append" or "replace"' % k)
+            opts[k] = o
+        roles = list(roles)
+    elif not isinstance(roles, list):
+        die('"roles" must be a list of role names, or an object of per-role options')
     extras = [r for r in (cfg.get("extraRoles") or [])]
     names = {r.get("name") for r in extras if isinstance(r, dict)}
     for r in extras:
         if not isinstance(r, dict) or not re.match(r"^[a-z][a-z0-9-]*$", str(r.get("name") or "")) or not r.get("description"):
             die('each "extraRoles" entry needs a lowercase "name" and a "description"')
         if r["name"] in ALL_ROLES:
-            die('"extraRoles" name %r collides with a built-in role' % r["name"])
+            die('"extraRoles" entry %r collides with the built-in role of the same name. To change what the built-in role '
+                'says, use "roles": {"%s": {"bodyFile": "<file>", "bodyMode": "append" or "replace"}}; to add a different '
+                'role, pick another name.' % (r["name"], r["name"]))
     for r in roles:
         if r not in ALL_ROLES and r not in names:
             die('unknown role %r in "roles" (built in: %s; add custom ones under "extraRoles")' % (r, ", ".join(ALL_ROLES)))
     cfg["_roles"] = [r for r in ALL_ROLES if r in roles]
+    cfg["_roleopts"] = opts
+    lead = cfg.get("lead") or {}
+    if not isinstance(lead, dict):
+        die('"lead" must be an object')
+    if lead.get("hookScope", "agent") not in ("agent", "project"):
+        die('"lead.hookScope" must be "agent" or "project"')
     cfg["_extras"] = extras
     return cfg
 
@@ -141,6 +162,8 @@ def variables(cfg, paths):
         "PROMOTE_RULE": lead.get("promoteRule") or "",
         "ROLE_LIST": rolelist,
         "ROUTING": routing,
+        "APP_START": ("use `%s`" % lead["appRoute"]) if lead.get("appRoute") else "run `/%s-lead-rules` in a new chat" % pfx,
+        "HEARTBEAT_PROJECT": "1" if lead.get("hookScope") == "project" else "",
     }
 
 
@@ -184,6 +207,22 @@ def extra_agent(cfg, e, v, target):
     return render(open(os.path.join(CORE, "templates", "agents", "extra.md")).read(), ev)
 
 
+def project_file(target, rel, what):
+    try:
+        return open(os.path.join(target, rel)).read()
+    except OSError:
+        die('%s: %s not found (paths are relative to the project root)' % (what, rel))
+
+
+def body_override(text, extra, mode):
+    """append: the project's text goes after the kit's body. replace: it replaces the body (frontmatter is kept)."""
+    m = re.match(r"^(---\n.*?\n---\n)", text, re.S)
+    head = m.group(1) if m else ""
+    if mode == "replace":
+        return head + "\n" + extra.strip() + "\n"
+    return text.rstrip("\n") + "\n\n" + extra.strip() + "\n"
+
+
 def plan(cfg, target, scope):
     """-> (files {abs path: bytes}, starters {abs path: bytes}, settings entries [(event, matcher, command)])"""
     paths = scope_paths(cfg, target, scope)
@@ -200,7 +239,11 @@ def plan(cfg, target, scope):
     # 2. the agents, rendered
     tpl = os.path.join(CORE, "templates", "agents")
     for r in cfg["_roles"]:
-        files[os.path.join(paths["agents"], "%s-%s.md" % (cfg["prefix"], r))] = render(open(os.path.join(tpl, r + ".md")).read(), v).encode()
+        text = render(open(os.path.join(tpl, r + ".md")).read(), v)
+        o = cfg["_roleopts"].get(r) or {}
+        if o.get("bodyFile"):
+            text = body_override(text, project_file(target, o["bodyFile"], "roles.%s.bodyFile" % r), o.get("bodyMode", "append"))
+        files[os.path.join(paths["agents"], "%s-%s.md" % (cfg["prefix"], r))] = text.encode()
     for e in cfg["_extras"]:
         files[os.path.join(paths["agents"], "%s-%s.md" % (cfg["prefix"], e["name"]))] = extra_agent(cfg, e, v, target).encode()
     # 3. skills: the menu and the lead rules are the kit's; build/design rules are starters; generated ones win
@@ -208,10 +251,15 @@ def plan(cfg, target, scope):
     stpl = os.path.join(CORE, "templates", "skills")
     pfx = cfg["prefix"]
 
+    lead_cfg = cfg.get("lead") or {}
+
     def skill(name, tplname, bucket):
         if name in gen:
             return
-        bucket[os.path.join(paths["skills"], name, "SKILL.md")] = render(open(os.path.join(stpl, tplname, "SKILL.md")).read(), v).encode()
+        text = render(open(os.path.join(stpl, tplname, "SKILL.md")).read(), v)
+        if tplname == "lead-rules" and lead_cfg.get("extraRulesFile"):  # appended verbatim, never templated
+            text = text.rstrip("\n") + "\n\n## Project rules\n\n" + project_file(target, lead_cfg["extraRulesFile"], "lead.extraRulesFile").strip() + "\n"
+        bucket[os.path.join(paths["skills"], name, "SKILL.md")] = text.encode()
     skill("roles", "roles", files)
     if "lead" in cfg["_roles"]:
         skill(pfx + "-lead-rules", "lead-rules", files)
@@ -230,6 +278,8 @@ def plan(cfg, target, scope):
     if "lead" in cfg["_roles"]:
         ent += [("PostToolUse", "Agent|Task", cmd("lead-inflight-record.sh", "dispatch")),
                 ("SubagentStop", None, cmd("lead-inflight-record.sh", "done"))]
+        if v["HEARTBEAT_PROJECT"]:  # every session, not only `--agent <prefix>-lead`; keyed by session_id, so safe
+            ent.append(("Stop", None, cmd("lead-heartbeat-check.sh")))
     return paths, files, starters, ent
 
 
@@ -271,7 +321,7 @@ def merge_settings(settings, ent):
                 kept.append(entry)
         hooks[event] = kept
     for event, matcher, command in ent:
-        e = {"hooks": [{"type": "command", "command": command, "timeout": 10}]}
+        e = {"hooks": [{"type": "command", "command": command, "timeout": 15 if "heartbeat" in command else 10}]}
         if matcher:
             e = dict({"matcher": matcher}, **e)
         hooks.setdefault(event, [])

@@ -2,7 +2,7 @@
 
 **Turn one Claude Code chat into a team of specialists.**
 
-> **Status: Active.** Maintained by [Launch With Ben](https://launchwithben.com). See [MAINTENANCE.md](MAINTENANCE.md) for what that means, how to hear about updates, and what happens if it is ever sunset. Changes are in [CHANGELOG.md](CHANGELOG.md). Current version: **0.2.1**.
+> **Status: Active.** Maintained by [Launch With Ben](https://launchwithben.com). See [MAINTENANCE.md](MAINTENANCE.md) for what that means, how to hear about updates, and what happens if it is ever sunset. Changes are in [CHANGELOG.md](CHANGELOG.md). Current version: **0.2.2**.
 
 A lead, a project manager, a developer, a UI builder and a concept designer, each with its own scope, its own rules and (for the roles that edit code) its own copy of the repo. You talk to the lead. It scopes the work, files one issue per unit, sends every job to the right specialist in parallel, reads the diff that comes back and merges it. A role cannot hand back without showing its check result, or the reason it had none.
 
@@ -43,7 +43,7 @@ Requirements: Claude Code, `bash`, `python3` (hooks and installer, stdlib only),
 
 ```bash
 # 1. get the kit at a tag, next to your project (not inside it)
-git clone --branch v0.2.1 https://github.com/launchwithben/claude-code-agents ../claude-code-agents
+git clone --branch v0.2.2 https://github.com/launchwithben/claude-code-agents ../claude-code-agents
 
 # 2. from your project root: write a starter overlay, then edit it
 bash ../claude-code-agents/install.sh --init
@@ -74,7 +74,7 @@ cd - && bash ../claude-code-agents/install.sh --check                   # what w
 bash ../claude-code-agents/install.sh                                   # apply it
 ```
 
-`install.sh --check` renders everything again in memory and compares it with what is on disk. It exits 1 and lists `MISSING`, `DRIFT` (a core file or rendered agent differs from the kit, including a local edit) or `STALE` (a file the new kit no longer ships), plus any generated skill that no longer matches its doc and any kit hook missing from `settings.json`. Pin the version in the overlay (`"kit": "0.2.0"`) and the installer refuses a checkout of a different version.
+`install.sh --check` renders everything again in memory and compares it with what is on disk. It exits 1 and lists `MISSING`, `DRIFT` (a core file or rendered agent differs from the kit, including a local edit) or `STALE` (a file the new kit no longer ships), plus any generated skill that no longer matches its doc and any kit hook missing from `settings.json`. Pin the version in the overlay (`"kit": "0.2.2"`) and the installer refuses a checkout of a different version.
 
 **Never edit installed core files in place** (`scripts/roles-kit/`, `.claude/agents/<prefix>-*.md`): the next install overwrites them. Change the overlay, or change the kit (see [MAINTENANCE.md](MAINTENANCE.md) for how a fix found in a project flows back here).
 
@@ -87,25 +87,25 @@ Everything project-specific lives here. A full example is `examples/roles.config
 | `prefix` | **Required.** Role prefix: agents are `<prefix>-lead`, `<prefix>-dev`... |
 | `kit` | Pin: the install refuses another kit version. |
 | `scope` | `project` (default) or `user`. |
-| `roles` | Built-in roles to install; default all of `lead, pm, dev, ui, concept`. |
+| `roles` | Built-in roles to install; default all of `lead, pm, dev, ui, concept`. Either a list, or an object of per-role options: `{"pm": {"bodyFile": "docs/pm-procedure.md", "bodyMode": "append" or "replace"}}`. `append` (default) puts your text after the kit's body; `replace` keeps the frontmatter and swaps the body. An `extraRoles` entry named like a built-in is refused. |
 | `extraRoles` | `[{name, description, model, color, worktree, skills, contract, body or bodyFile, routes}]`: extra roles rendered from a generic template. |
 | `gate`, `extraGates` | THE check command (printed into every agent's contract) and any further ones. |
-| `handback` | Evidence each role must report: `{"dev": ["gate"], "ui": ["gate","screenshots"], ...}`. Kinds: `gate`, `screenshots`, `concept-note`, `cursor`, `commit`, `line:NAME`. Keyed by suffix or full role name. |
+| `handback` | Evidence each role must report: `{"dev": ["gate"], "ui": ["gate","screenshots"], ...}`. Kinds: `gate`, `screenshots`, `concept-note`, `cursor`, `commit`, `line:NAME` (a `NAME: <value>` line) and `line:NAME~REGEX` (the text after `NAME:` must match the regex, e.g. `line:CURSOR~\\S+ -> ACKED` blocks a PM run that did not ack its cursor; a regex that does not compile is ignored). Keyed by suffix or full role name. |
 | `territory` | Path of the territory file. **No key = the territory guard is off** and the regex routing guard is used. |
 | `skills` | Path of the skills file for `build_skills.sh` (default `roles/skills.txt`). |
 | `genericAgents` | Agent types the routing guard polices (default: `bulk-worker, general-purpose, full-stack-developer, haiku-worker, claude`). |
 | `mainSessionRoles` | Roles that are chats, never subagents (default `["lead"]`). |
 | `mainBranch`, `chains` | "Landed" means an ancestor of this branch; the file the PM writes ready chains to (default `docs/pm/chains.md`). |
-| `lead` | `{focusCommand, shipStep, promoteRule, routing}`: text and commands the lead's loop uses. |
+| `lead` | `{focusCommand, shipStep, promoteRule, routing, appRoute, hookScope, extraRulesFile}`: text and commands the lead's loop uses. `appRoute` (e.g. `/lead-agent`) is how the desktop app starts the lead, used verbatim by the picker, the roles menu and the routing guard. `hookScope` is `agent` (default: the heartbeat lives on the lead agent file, so it fires only in a `--agent <prefix>-lead` chat) or `project` (the recorder AND the heartbeat are registered in `settings.json` for every session, for desktop-app users who become the lead by invoking a command in a plain chat; safe, because both are keyed by `session_id` and a session that never dispatched is never nudged). `extraRulesFile` is appended to the lead rules as "Project rules". |
 | `pm` | `{repo, cursor, readyLabel, readFirst, rules, deltaCommand, ackCommand, paths}`: board specifics. Point `deltaCommand` at your own script if you need status fields. |
 
 **Territory file** (`roles/territory.txt`): `<role> <edit|all> <path>`, first match wins. `edit` = anyone may read, only the owner may change; `all` = only the owner may even read, search or be briefed about it; role `-` = owned by nobody (the lead keeps it); `re:<regex>` for patterns. What counts as a write is judged **per target**: a redirect target, a `tee`/`cp`/`mv`/`ln` destination, `rm`/`touch`/`mkdir` arguments, a `sed -i` file, a path an interpreter opens for writing. A brief to an agent is denied only when none of the territories it names belongs to the dispatched agent. Override when you ask for hands-on work: `touch tmp/role-override` (30 minutes).
 
-**Skills file** (`roles/skills.txt`), one line per skill: `name | description | path/to/doc.md#Heading prefix ; other.md#Heading`. `build_skills.sh` writes `.claude/skills/<name>/SKILL.md` from those `## ` sections; `--check` fails on drift. A generated skill replaces the starter of the same name.
+**Skills file** (`roles/skills.txt`), one line per skill: `name | description | path/to/doc.md#Heading prefix ; other.md#Heading [| key: value ; key: value]`. The optional 4th column declares more frontmatter, written after `description:` (for example `user-invocable: true`). `build_skills.sh` writes `.claude/skills/<name>/SKILL.md` from those `## ` sections; `--check` fails on drift. A generated skill replaces the starter of the same name.
 
 ## Use it
 
-Talk to the lead. Start it as the main chat: `claude --agent <prefix>-lead` (CLI), or in the desktop app open a chat and run `/<prefix>-lead-rules`. The lead is a seat you sit in, never a subagent: the picker and the routing guard both say so. The full loop, modes and costs are in [docs/lead.md](docs/lead.md).
+Talk to the lead. Start it as the main chat: `claude --agent <prefix>-lead` (CLI), or in the desktop app open a chat and run `/<prefix>-lead-rules` (or your `lead.appRoute`). The lead is a seat you sit in, never a subagent: the picker and the routing guard both say so. The full loop, modes and costs are in [docs/lead.md](docs/lead.md).
 
 Without the lead, from any chat:
 

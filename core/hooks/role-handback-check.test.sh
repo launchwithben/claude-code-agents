@@ -4,7 +4,7 @@ here="$(cd "$(dirname "$0")" && pwd)"
 source "$here/_testlib.sh"
 t_syntax "$here/role-handback-check.sh" "$here/role-handback-check.py" "$here/_kit.py"
 H="$here/role-handback-check.sh"
-t_proj '{"prefix":"acme","handback":{"audit":["gate","line:REPORT"]},"extraRoles":[{"name":"docs","description":"d","contract":["gate"]}]}'
+t_proj '{"prefix":"acme","handback":{"audit":["gate","line:REPORT"],"ackpm":["line:CURSOR~\\S+ -> ACKED"],"badre":["line:X~("]},"extraRoles":[{"name":"docs","description":"d","contract":["gate"]}]}'
 run() { # <role> <agent_id> <message> -> exit code
   python3 -c 'import json,sys;print(json.dumps({"hook_event_name":"SubagentStop","agent_type":sys.argv[1],"agent_id":sys.argv[2],"last_assistant_message":sys.argv[3]}))' "$1" "$2" "$3" | "$H" "$1" >/dev/null 2>&1
 }
@@ -28,6 +28,13 @@ t 2 "overlay: custom role missing REPORT line"  acme-audit au1 $'GATE: make test
 t 0 "overlay: custom role with both"            acme-audit au2 $'GATE: make test -> PASS\nREPORT: docs/audit.md'
 t 2 "overlay: extra role needs a gate"          acme-docs e1 "docs updated"
 t 0 "overlay: extra role with gate"             acme-docs e2 $'GATE: make docs -> PASS'
+# pattern evidence: line:NAME~REGEX
+t 2 "pattern: cursor not acked -> BLOCK"          acme-ackpm k1 $'CURSOR: 2026-10-14T10:00:00Z'
+t 2 "pattern: cursor with a different ending -> BLOCK" acme-ackpm k2 $'CURSOR: 2026-10-14T10:00:00Z -> PENDING'
+t 2 "pattern: no cursor line at all -> BLOCK"     acme-ackpm k3 "done"
+t 0 "pattern: cursor acked -> ALLOW"              acme-ackpm k4 $'CURSOR: 2026-10-14T10:00:00Z -> ACKED'
+t 0 "pattern: GATE-SKIPPED still releases"        acme-ackpm k5 $'GATE-SKIPPED: rate limited'
+t 0 "pattern: a regex that does not compile fails open" acme-badre k6 "anything"
 # suffix match: a differently prefixed role still gets the contract of its suffix
 t 2 "suffix: other-prefix ui needs evidence"    other-ui f1 "done"
 t 0 "no contract for the role -> ALLOW"         acme-unknown g1 "whatever"

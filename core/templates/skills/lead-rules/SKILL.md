@@ -11,11 +11,11 @@ user-invocable: true
 2. Route to a ROLE, never a generic worker: {{ROUTING}}. The routing hooks deny the rest.
 3. The lead types nothing bigger than the brief it would have written. Bulk generation is a script, not a chat.
 4. Same task = `SendMessage` to the same agent; new task = a fresh dispatch. A role does 1-2 tasks, then starts fresh: context grows the bill faster than linearly.
-5. Pick the vehicle per task. A visible child session (a card the owner clicks, where the harness offers one) for work the owner will want to watch or steer; a background `Agent` for everything else and always while the owner is away.
+5. Pick the vehicle per task. A **visible child session** (a card the owner clicks, where the harness offers one) for work the owner will want to watch or steer: design iteration, copy. A **background `Agent`** for everything else, and ALWAYS while the owner is away (it starts without a click). After a child session hands back and its work is landed, archive it unless it holds context for an immediate follow-up.
 
 ## Scope before dispatch
 6. One issue per unit with what / where / why / how, a done-when, and a proof command. Run `git log --oneline --grep='#N'` first: open issues often describe shipped work.
-7. Re-derive any figure from a ticket against the live source before briefing on it. Verify a "blocked" claim before accepting it.
+7. Re-derive any figure from a ticket against the live source before briefing on it. Verify EVERY "blocked" claim before accepting it: open the thing it says is blocking. A label or a closing comment is a claim, not evidence.
 8. Brief = issue #, done-when, the gate (`{{CHECK}}`), "commit, report, STOP". Nothing else is optional.
 9. An item you do not finish leaves its question ON the issue the same run. A chat note does not survive the session.
 
