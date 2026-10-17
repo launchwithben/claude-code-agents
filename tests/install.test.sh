@@ -37,7 +37,7 @@ for f in .claude/agents/acme-lead.md .claude/agents/acme-pm.md .claude/agents/ac
          scripts/roles-kit/bin/ask.sh scripts/roles-kit/bin/kit-check scripts/roles-kit/bin/roles-pulse.mjs; do
   [ -f "$P/$f" ] && t_pass "installed $f" || t_fail "installed $f"
 done
-t_eq 0.2.2 "$(cat "$P/scripts/roles-kit/VERSION")" "the kit version is recorded"
+t_eq 0.2.3 "$(cat "$P/scripts/roles-kit/VERSION")" "the kit version is recorded"
 echo "-- settings.json was MERGED, not overwritten"
 SJ="$P/.claude/settings.json"
 t_eq '["Bash(ls:*)"]' "$(jget "$SJ" 'json.dumps(d["permissions"]["allow"])')" "unrelated top-level keys survive"
@@ -58,6 +58,8 @@ grep -q 'acme-docs' "$P/.claude/agents/acme-lead.md" && t_pass "the extra role i
 grep -q '^name: acme-docs$' "$P/.claude/agents/acme-docs.md" && grep -q 'isolation: worktree' "$P/.claude/agents/acme-docs.md" && t_pass "extra role rendered" || t_fail "extra role"
 echo "-- generated skill built from the docs, starters written once"
 grep -q 'GENERATED' "$P/.claude/skills/acme-build-rules/SKILL.md" && t_pass "acme-build-rules is generated from docs/rules.md (replaces the starter)" || t_fail "generated skill"
+grep -q '^## Craft bar$' "$P/.claude/agents/acme-ui.md" && grep -q 'Accent budget' "$P/.claude/agents/acme-ui.md" && t_pass "ui agent carries the craft bar" || t_fail "ui craft bar"
+grep -q '^## Craft bar$' "$P/.claude/agents/acme-concept.md" && grep -q 'rewards attention' "$P/.claude/agents/acme-concept.md" && t_pass "concept agent carries the craft bar" || t_fail "concept craft bar"
 grep -q 'HOW TO FILL' "$P/.claude/skills/acme-design-rules/SKILL.md" && t_pass "design-rules is a starter" || t_fail "design starter"
 echo "my own rules" >> "$P/.claude/skills/acme-design-rules/SKILL.md"
 echo "-- the installer's follow-up notes"

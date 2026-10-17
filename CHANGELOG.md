@@ -2,6 +2,24 @@
 
 All notable changes to this kit are listed here, newest first. The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and the project uses [Semantic Versioning](https://semver.org/). To hear about releases, use GitHub's **Watch → Custom → Releases**.
 
+## [0.2.3] - 2026-10-16
+
+The ui and concept roles get a craft bar, not only a correctness bar (#17). No breaking changes; re-run `install.sh` to render the agents again.
+
+### Added
+- **Craft bar** in `<prefix>-ui` and `<prefix>-concept`, seven generic rules:
+  - accent budget (one accent primary per view, never confetti)
+  - constants adapt, never move
+  - structure by hairline
+  - hierarchy by type, not colour
+  - detail
+  - tokens only
+  - the primary action rewards attention (a few hidden touches allowed, motion limits and `prefers-reduced-motion` respected)
+
+  The project's own design rules still win on any conflict.
+- `<prefix>-ui` reports accent-coloured elements per view, before and after, counted from the DOM, for any visual change.
+- Fixtures: both rendered agents must carry the section.
+
 ## [0.2.2] - 2026-10-15
 
 Five gaps found migrating the first real project onto the kit (#11). No breaking changes; re-run `install.sh`. (The v0.2.1 tag's README header line has a version typo; it is fixed here.)
