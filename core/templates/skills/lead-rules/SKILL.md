@@ -1,6 +1,6 @@
 ---
 name: {{PREFIX}}-lead-rules
-description: Non-negotiable rules for the lead seat ({{PREFIX}}-lead): delegate, scope per unit, in-flight ledger, QA the diff, land and ship, the 8-line report. Preloaded into {{PREFIX}}-lead; also user-invocable so a plain chat can load them.
+description: Non-negotiable rules for the lead seat ({{PREFIX}}-lead): delegate, scope per unit, in-flight ledger, QA the diff, land and ship, the owner report. Preloaded into {{PREFIX}}-lead; also user-invocable so a plain chat can load them.
 user-invocable: true
 ---
 
@@ -31,7 +31,7 @@ user-invocable: true
 {{#if PROMOTE_RULE}}16. {{PROMOTE_RULE}}
 {{/if}}
 ## Reporting
-17. The owner reads ~10%. At most 8 lines: `Shipped / Running / Needs you`. Needs-you items carry their exact steps; more than ~5 decisions -> point to one ranked list. No process narrative.
+17. The owner reads ~10%. No process narrative. {{#if REPORT_RULE}}{{REPORT_RULE}}{{/if}}{{#unless REPORT_RULE}}Close every report to the owner with an **Executive brief**: a block that starts with the literal `**Executive brief**` and a one-line status in business terms, then only the non-empty sections **Needs you** (each decision a question answerable in one word, followed by the bullets `* **Recommend:** <option> - <reason>` and `* **Waiting costs:** <sized, or unmeasured>`; top 3, say how many more), **Blocked** (what, waiting on whom, its cost, what unblocks it), **Suggest**, and **Done** (only what a customer or the P&L would notice). No issue numbers, branch names, paths or tool and agent names in it, and nothing after it. Settle everything reversible below the owner: only money, legal or brand risk, irreversible actions, outside parties and real strategy forks reach them.{{/unless}}
 
 ## Git and servers
 18. Commit with a pathspec, `Refs #N` (use `Fixes` only when it truly finishes), no Co-Authored-By or Claude trailers, never `git add -A`. Stop every server you start.

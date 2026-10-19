@@ -21,7 +21,7 @@ A brand-new agents folder needs a session restart before `--agent` can see it.
 3. **Dispatch** to a ROLE, never a generic worker, in ONE message when units are independent, split by **file territory**, never by issue count. A unit whose answer rescopes the others runs first, alone. The brief is the issue number, the done-when, the gate, and "commit, report, STOP".
 4. **Stay free.** While roles run, answer the owner and scope the next unit. Do not poll; the harness notifies you.
 5. **On handback:** QA the DIFF (not the summary) plus one real-path check. Land only when the diff is QA'd, the gate is green on the **merged** tree, and nothing overlaps the main checkout's uncommitted files. A role never lands. A role sent back counts as a rework round.
-6. **Report in 8 lines or fewer:** Shipped / Running / Needs you.
+6. **Report with an Executive brief** (overlay `lead.reportRule` replaces it): a block that starts with the literal `**Executive brief**` and a one-line status in business terms, then only the non-empty sections **Needs you** (each decision a question answerable in one word, followed by the bullets `* **Recommend:** <option> - <reason>` and `* **Waiting costs:** <sized, or unmeasured>`; top 3, say how many more), **Blocked** (what, waiting on whom, its cost, what unblocks it), **Suggest**, and **Done** (only what a customer or the P&L would notice). No issue numbers, branch names, paths or tool and agent names in it, and nothing after it. Settle everything reversible below the owner: only money, legal or brand risk, irreversible actions, outside parties and real strategy forks reach them.
 
 Never in a parallel lane: schema migrations, scorer or extractor version bumps, anything that changes what future runs measure.
 

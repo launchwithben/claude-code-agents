@@ -2,6 +2,17 @@
 
 All notable changes to this kit are listed here, newest first. The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and the project uses [Semantic Versioning](https://semver.org/). To hear about releases, use GitHub's **Watch → Custom → Releases**.
 
+## [0.3.0] - 2026-10-19
+
+The lead's report to the owner is now an **Executive brief** by default, and an overlay can replace it (#18). Re-run `install.sh` to render the lead again.
+
+### Changed
+- **Default owner report:** a block that starts with the literal `**Executive brief**`, then only the non-empty sections Needs you (each decision a question, with `Recommend` and `Waiting costs` bullets), Blocked, Suggest and Done. No issue numbers, paths or tool names in it, and nothing after it. It replaces the 8-line `Shipped / Running / Needs you` report in the lead agent, the lead rules skill and `docs/lead.md`.
+
+### Added
+- **`lead.reportRule`** (one line): replaces the default report rule in both the lead agent and the lead rules skill.
+- Fixtures: the default renders the brief and not the old report; `reportRule` replaces it in both files; `--check` stays clean.
+
 ## [0.2.3] - 2026-10-16
 
 The ui and concept roles get a craft bar, not only a correctness bar (#17). No breaking changes; re-run `install.sh` to render the agents again.

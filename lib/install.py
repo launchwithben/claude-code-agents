@@ -160,6 +160,7 @@ def variables(cfg, paths):
         "FOCUS_CMD": lead.get("focusCommand") or "",
         "SHIP_STEP": lead.get("shipStep") or "",
         "PROMOTE_RULE": lead.get("promoteRule") or "",
+        "REPORT_RULE": one_line(lead.get("reportRule") or ""),
         "ROLE_LIST": rolelist,
         "ROUTING": routing,
         "APP_START": ("use `%s`" % lead["appRoute"]) if lead.get("appRoute") else "run `/%s-lead-rules` in a new chat" % pfx,

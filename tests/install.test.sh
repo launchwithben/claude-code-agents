@@ -37,7 +37,7 @@ for f in .claude/agents/acme-lead.md .claude/agents/acme-pm.md .claude/agents/ac
          scripts/roles-kit/bin/ask.sh scripts/roles-kit/bin/kit-check scripts/roles-kit/bin/roles-pulse.mjs; do
   [ -f "$P/$f" ] && t_pass "installed $f" || t_fail "installed $f"
 done
-t_eq 0.2.3 "$(cat "$P/scripts/roles-kit/VERSION")" "the kit version is recorded"
+t_eq 0.3.0 "$(cat "$P/scripts/roles-kit/VERSION")" "the kit version is recorded"
 echo "-- settings.json was MERGED, not overwritten"
 SJ="$P/.claude/settings.json"
 t_eq '["Bash(ls:*)"]' "$(jget "$SJ" 'json.dumps(d["permissions"]["allow"])')" "unrelated top-level keys survive"
@@ -152,6 +152,22 @@ echo "$warn" | grep -q 'scripts/preflight.sh' && t_pass "warns about the gate sc
 echo "$warn" | grep -q 'territory' && t_pass "warns about the missing territory file" || t_fail "no territory warning"
 echo "$warn" | grep -q 'example "docs" role' && t_pass "warns about the example docs role" || t_fail "no docs-role warning"
 clean="$(bash "$I" --target "$P" --check 2>&1)"; echo "$clean" | grep -q WARNING && t_fail "--check must not warn" || t_pass "a finished overlay (and --check) does not warn about the starter"
+
+echo "-- v0.3.0: the lead reports with an Executive brief by default; lead.reportRule replaces it"
+for f in "$P/.claude/agents/acme-lead.md" "$P/.claude/skills/acme-lead-rules/SKILL.md"; do
+  grep -q 'Executive brief' "$f" && t_pass "default report rule is the Executive brief in ${f##*/.claude/}" || t_fail "default brief in ${f##*/.claude/}"
+  grep -q 'Shipped / Running / Needs you' "$f" && t_fail "old 8-line report still in ${f##*/.claude/}" || t_pass "old 8-line report gone from ${f##*/.claude/}"
+done
+R1="$S/rr"; mkrepo "$R1"
+python3 - "$R1/roles.config.json" <<'PY'
+import json,sys
+c=json.load(open(sys.argv[1])); c["lead"]["reportRule"]="Report as a weekly memo with three headings."; json.dump(c,open(sys.argv[1],"w"))
+PY
+bash "$I" --target "$R1" >/dev/null 2>&1; t_eq 0 "$?" "install with lead.reportRule"
+for f in "$R1/.claude/agents/acme-lead.md" "$R1/.claude/skills/acme-lead-rules/SKILL.md"; do
+  grep -q 'weekly memo with three headings' "$f" && ! grep -q 'Executive brief' "$f" && t_pass "lead.reportRule replaces the default in ${f##*/.claude/}" || t_fail "reportRule in ${f##*/.claude/}"
+done
+bash "$I" --target "$R1" --check >/dev/null 2>&1; t_eq 0 "$?" "--check clean with lead.reportRule"
 
 echo "-- v0.2.2: lead.hookScope \"project\" registers the recorder and the heartbeat for every session"
 cfgset() { python3 - "$1" "$2" <<'PY'
