@@ -37,7 +37,7 @@ for f in .claude/agents/acme-lead.md .claude/agents/acme-pm.md .claude/agents/ac
          scripts/roles-kit/bin/ask.sh scripts/roles-kit/bin/kit-check scripts/roles-kit/bin/roles-pulse.mjs; do
   [ -f "$P/$f" ] && t_pass "installed $f" || t_fail "installed $f"
 done
-t_eq 0.4.0 "$(cat "$P/scripts/roles-kit/VERSION")" "the kit version is recorded"
+t_eq 0.4.1 "$(cat "$P/scripts/roles-kit/VERSION")" "the kit version is recorded"
 echo "-- settings.json was MERGED, not overwritten"
 SJ="$P/.claude/settings.json"
 t_eq '["Bash(ls:*)"]' "$(jget "$SJ" 'json.dumps(d["permissions"]["allow"])')" "unrelated top-level keys survive"
@@ -244,6 +244,18 @@ done
 grep -q 'signed-off frame' "$D1/.claude/agents/acme-ui.md" && grep -q 'FRAME-SYNC:' "$D1/.claude/agents/acme-ui.md" && t_pass "ui builds only from a signed-off frame and flags the frame for sync" || t_fail "ui signoff / sync"
 grep -q 'in the design file' "$D1/.claude/agents/acme-concept.md" && t_pass "concept renders in the design tool" || t_fail "concept renders in tool"
 bash "$I" --target "$D1" --check >/dev/null 2>&1; t_eq 0 "$?" "--check clean with design keys"
+for r in ui concept; do
+  f="$D1/.claude/agents/acme-$r.md"
+  grep -q 'OWN page' "$f" && grep -q '`{surface} v{n}`' "$f" && grep -q 'PAGE link' "$f" && t_pass "$r carries the page-per-version rule with the default naming" || t_fail "$r page-per-version rule"
+done
+grep -q 'OWN page' "$P/.claude/agents/acme-ui.md" && t_fail "page-per-version must not render without design.source=figma" || t_pass "no page-per-version rule when source=code"
+cfgset "$D1/roles.config.json" 'c["design"]["pageNaming"]="{surface} round {n}"'
+bash "$I" --target "$D1" >/dev/null 2>&1; t_eq 0 "$?" "install with design.pageNaming"
+grep -q '`{surface} round {n}`' "$D1/.claude/agents/acme-ui.md" && t_pass "pageNaming overrides the default" || t_fail "pageNaming override"
+cfgset "$D1/roles.config.json" 'c["design"]["pageNaming"]="no placeholders"'
+bash "$I" --target "$D1" >/dev/null 2>&1; t_eq 1 "$?" "pageNaming without {surface} and {n} is refused"
+cfgset "$D1/roles.config.json" 'del c["design"]["pageNaming"]'
+bash "$I" --target "$D1" >/dev/null 2>&1
 cfgset "$D1/roles.config.json" 'c["design"]["signoff"]=False'
 bash "$I" --target "$D1" >/dev/null 2>&1
 grep -q 'signed-off frame' "$D1/.claude/agents/acme-ui.md" && t_fail "signoff=false must drop the sign-off gate" || t_pass "signoff=false drops the sign-off gate"

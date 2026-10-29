@@ -115,7 +115,9 @@ def load_config(path):
         die('"design.callBudget" must be a positive whole number')
     if "signoff" in d and not isinstance(d["signoff"], bool):
         die('"design.signoff" must be true or false')
-    for k in ("file", "exportsDir", "ledger"):
+    if "pageNaming" in d and not (isinstance(d["pageNaming"], str) and "{surface}" in d["pageNaming"] and "{n}" in d["pageNaming"]):
+        die('"design.pageNaming" must be a string containing {surface} and {n}, like "{surface} v{n}"')
+    for k in ("file", "exportsDir", "ledger", "pageNaming"):
         if k in d and not isinstance(d[k], str):
             die('"design.%s" must be a string' % k)
     cfg["_extras"] = extras
@@ -145,6 +147,7 @@ def design_vars(cfg, pfx):
         "DESIGN_EXPORTS": str(d.get("exportsDir") or "").strip(),
         "DESIGN_BUDGET": str(d.get("callBudget") or ""),
         "DESIGN_LEDGER": str(d.get("ledger") or "").strip(),
+        "DESIGN_PAGE": str(d.get("pageNaming") or "{surface} v{n}").strip(),
         "DESIGN_F": "1" if figma else "",
         "DESIGN_FS": "1" if figma and signoff else "",
         "DESIGN_FN": "1" if figma and not signoff else "",

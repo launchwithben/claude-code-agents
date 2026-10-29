@@ -2,6 +2,14 @@
 
 All notable changes to this kit are listed here, newest first. The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and the project uses [Semantic Versioning](https://semver.org/). To hear about releases, use GitHub's **Watch → Custom → Releases**.
 
+## [0.4.1] - 2026-10-29
+
+Figma page per design round (#24). No breaking changes; re-run `install.sh` to render the agents again.
+
+### Added
+- **Page-per-version rule** (#24): with `design.source: "figma"`, `ui` and `concept` keep every design round of a surface on its own page of the design file, named `<Surface> v<N>` ("Checkout v1", "Checkout v2"). A new round duplicates the last approved page; a page holds only that version's frames so review pages load fast; the review link handed to the owner is the page link; older versions are consolidated into an archive page later and never deleted without the owner's sign-off.
+- **`design.pageNaming`** (optional string, default `"{surface} v{n}"`; must contain `{surface}` and `{n}`, otherwise refused).
+
 ## [0.4.0] - 2026-10-28
 
 Design source and sign-off, an approvals ledger with an edit-do-not-redesign default, a quieter lead, and a size warning for generated skills (#20, #21, #22, #14). No breaking changes: a project that sets none of the new keys gets the same agents plus the new default rules below. Re-run `install.sh` to render the agents again.

@@ -11,6 +11,7 @@ This project designs in the design tool first (file: {{DESIGN_FILE}}). Code foll
 {{/if}}{{#if DESIGN_FE}}- Read the exported frames in `{{DESIGN_EXPORTS}}` first. Call the design tool only for what the export lacks (a frame not exported yet, or one the brief says changed).
 {{/if}}{{#if DESIGN_FB}}- The design tool's quota is shared and limited: use at most {{DESIGN_BUDGET}} design-tool calls for this task, never spend one on a frame that is already exported, and report how many you used.
 {{/if}}{{#if DESIGN_F}}- If the tool is not available in this session, say so and hand back. Do not fall back to designing in code.
+- Every design round for a surface lives on its OWN page of the design file, named `{{DESIGN_PAGE}}` (for example "Checkout v1", "Checkout v2"). A new round is a new page: duplicate the last approved page, then edit the copy. A page holds only that version's frames, so review pages stay fast to load. The review link you hand over is the PAGE link, never the file link. Never delete or overwrite an older version's page; older versions are consolidated into an archive page later, and only with the owner's sign-off.
 - After a build the owner approves, the frame may no longer match the code. End your handback with `FRAME-SYNC: <frame> needs sync | none`. Do not edit the design file yourself unless the brief says so.
 
 {{/if}}

@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # install.sh - install the role kit into a project from its overlay (roles.config.json), or check for drift.
 #
-#   cd your-project && git clone --branch v0.4.0 <kit url> ../claude-code-agents   # pin a tag
+#   cd your-project && git clone --branch v0.4.1 <kit url> ../claude-code-agents   # pin a tag
 #   bash ../claude-code-agents/install.sh --init      # writes a starter roles.config.json
 #   $EDITOR roles.config.json                         # prefix, gate, territory...
 #   bash ../claude-code-agents/install.sh             # install (safe to re-run: it MERGES settings.json)
