@@ -2,6 +2,20 @@
 
 All notable changes to this kit are listed here, newest first. The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and the project uses [Semantic Versioning](https://semver.org/). To hear about releases, use GitHub's **Watch → Custom → Releases**.
 
+## [0.4.0] - 2026-10-28
+
+Design source and sign-off, an approvals ledger with an edit-do-not-redesign default, a quieter lead, and a size warning for generated skills (#20, #21, #22, #14). No breaking changes: a project that sets none of the new keys gets the same agents plus the new default rules below. Re-run `install.sh` to render the agents again.
+
+### Added
+- **`design` overlay key** (#20): `{source, file, signoff, exportsDir, callBudget, ledger}`. `source: "figma"` (any design tool; `file` required) makes `concept` render in the design file and `ui` build only from a frame the owner signed off (`signoff`, default true), read exported frames from `exportsDir` before spending design-tool quota, stay within `callBudget` calls and report the count, and end with `FRAME-SYNC: <frame> needs sync | none`. Default `source: "code"` renders nothing extra. Invalid values are refused.
+- **Approvals ledger** (#21): `design.ledger` points at a `KEEP` / `KILL` / `CHANGE-REQUESTED` ledger the `ui` and `concept` roles read first, and `ui` hands back `LEDGER: changed <ids> | kept <ids>`. A ledger path that does not exist is a warning. Template: `examples/design-ledger.md`.
+- **`build_skills.sh` warns** (#14) when a generated skill exceeds about 900 words (stderr, also under `--check`; never an error). `ROLE_KIT_SKILL_MAX_WORDS` changes the threshold.
+- Fixtures for all of the above; the installer fixture now asserts the default and the figma renders of both roles.
+
+### Changed
+- **`ui` and `concept` always carry "Edit, do not redesign"** (#21): change only what the ask names, call out approved elements before touching them, return a before/after of the same page and a changed/kept list. It applies with or without a ledger.
+- **Lead reports state, not narration** (#22): no step narration (one line before a long step at most); a background event that changes nothing gets no user-facing text and no new report; every reply that speaks ends with one state block. These rules stay when `lead.reportRule` replaces the block's format. The default Executive brief now has the sections **Live**, **Running**, **Needs you**, **Blocked**, **Suggest** (Running is new; Live replaces Done). In the lead agent, the lead rules skill and `docs/lead.md`.
+
 ## [0.3.0] - 2026-10-19
 
 The lead's report to the owner is now an **Executive brief** by default, and an overlay can replace it (#18). Re-run `install.sh` to render the lead again.

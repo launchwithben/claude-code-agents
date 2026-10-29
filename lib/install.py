@@ -104,6 +104,20 @@ def load_config(path):
         die('"lead" must be an object')
     if lead.get("hookScope", "agent") not in ("agent", "project"):
         die('"lead.hookScope" must be "agent" or "project"')
+    d = cfg.get("design") or {}
+    if not isinstance(d, dict):
+        die('"design" must be an object like {"source": "figma", "file": "<url>", "ledger": "docs/design/ledger.md"}')
+    if d.get("source", "code") not in ("code", "figma"):
+        die('"design.source" must be "code" or "figma"')
+    if d.get("source") == "figma" and not str(d.get("file") or "").strip():
+        die('"design.source" is "figma": "design.file" (the design file url or key) is required')
+    if "callBudget" in d and (isinstance(d["callBudget"], bool) or not isinstance(d["callBudget"], int) or d["callBudget"] < 1):
+        die('"design.callBudget" must be a positive whole number')
+    if "signoff" in d and not isinstance(d["signoff"], bool):
+        die('"design.signoff" must be true or false')
+    for k in ("file", "exportsDir", "ledger"):
+        if k in d and not isinstance(d[k], str):
+            die('"design.%s" must be a string' % k)
     cfg["_extras"] = extras
     return cfg
 
@@ -117,6 +131,37 @@ def scope_paths(cfg, target, scope):
     return {"kit": os.path.join(target, "scripts", "roles-kit"), "agents": os.path.join(target, ".claude", "agents"),
             "skills": os.path.join(target, ".claude", "skills"), "settings": os.path.join(target, ".claude", "settings.json"),
             "kit_expr": "$CLAUDE_PROJECT_DIR/scripts/roles-kit"}
+
+
+def design_vars(cfg, pfx):
+    """The design-source and approvals-ledger sections of the ui and concept roles, rendered from core/templates/design.
+    Default (source "code", no ledger) renders to nothing, so the agents are unchanged for a code-first project."""
+    d = cfg.get("design") or {}
+    figma = d.get("source") == "figma"
+    signoff = d.get("signoff", True)
+    flags = {
+        "PREFIX": pfx,
+        "DESIGN_FILE": str(d.get("file") or "").strip(),
+        "DESIGN_EXPORTS": str(d.get("exportsDir") or "").strip(),
+        "DESIGN_BUDGET": str(d.get("callBudget") or ""),
+        "DESIGN_LEDGER": str(d.get("ledger") or "").strip(),
+        "DESIGN_F": "1" if figma else "",
+        "DESIGN_FS": "1" if figma and signoff else "",
+        "DESIGN_FN": "1" if figma and not signoff else "",
+    }
+    flags["DESIGN_FE"] = "1" if figma and flags["DESIGN_EXPORTS"] else ""
+    flags["DESIGN_FB"] = "1" if figma and flags["DESIGN_BUDGET"] else ""
+    tpl = os.path.join(CORE, "templates", "design")
+    hb = ""
+    if figma:
+        hb += "FRAME-SYNC: <frame> needs sync | none\n"
+    if flags["DESIGN_LEDGER"]:
+        hb += "LEDGER: changed <ids> | kept <ids>\n"
+    return {
+        "DESIGN_UI": render(open(os.path.join(tpl, "ui.md")).read(), flags),
+        "DESIGN_CONCEPT": render(open(os.path.join(tpl, "concept.md")).read(), flags),
+        "DESIGN_HANDBACK_UI": hb,
+    }
 
 
 def variables(cfg, paths):
@@ -142,7 +187,7 @@ def variables(cfg, paths):
             bits.append("everything else that edits -> `%s-dev`" % pfx)
         routing = ", ".join(bits) or "to the role that owns the work"
     rules = pm.get("rules") or []
-    return {
+    return dict(design_vars(cfg, pfx), **{
         "PREFIX": pfx,
         "CHECK": gate or "<check command>",
         "EXTRA_GATES": ", ".join("`%s`" % g for g in (cfg.get("extraGates") or [])),
@@ -165,7 +210,7 @@ def variables(cfg, paths):
         "ROUTING": routing,
         "APP_START": ("use `%s`" % lead["appRoute"]) if lead.get("appRoute") else "run `/%s-lead-rules` in a new chat" % pfx,
         "HEARTBEAT_PROJECT": "1" if lead.get("hookScope") == "project" else "",
-    }
+    })
 
 
 # ---------------------------------------------------------------- the plan
@@ -496,6 +541,9 @@ def unfinished(cfg, target):
     for key in ("territory", "skills"):
         if cfg.get(key) and not os.path.exists(os.path.join(target, str(cfg[key]))):
             out.append('"%s" points at %s, which does not exist. Create it, or delete the key to turn the feature off.' % (key, cfg[key]))
+    d = cfg.get("design") or {}
+    if d.get("ledger") and not os.path.exists(os.path.join(target, d["ledger"])):
+        out.append('"design.ledger" points at %s, which does not exist. The ui and concept roles are told to read it first: create it (see examples/design-ledger.md in the kit) or delete the key.' % d["ledger"])
     if any(e.get("name") == "docs" and "Technical writer for the docs site" in str(e.get("description")) for e in cfg["_extras"]):
         out.append('extraRoles still holds the example "docs" role. Delete it or make it yours.')
     return out

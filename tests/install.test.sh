@@ -37,7 +37,7 @@ for f in .claude/agents/acme-lead.md .claude/agents/acme-pm.md .claude/agents/ac
          scripts/roles-kit/bin/ask.sh scripts/roles-kit/bin/kit-check scripts/roles-kit/bin/roles-pulse.mjs; do
   [ -f "$P/$f" ] && t_pass "installed $f" || t_fail "installed $f"
 done
-t_eq 0.3.0 "$(cat "$P/scripts/roles-kit/VERSION")" "the kit version is recorded"
+t_eq 0.4.0 "$(cat "$P/scripts/roles-kit/VERSION")" "the kit version is recorded"
 echo "-- settings.json was MERGED, not overwritten"
 SJ="$P/.claude/settings.json"
 t_eq '["Bash(ls:*)"]' "$(jget "$SJ" 'json.dumps(d["permissions"]["allow"])')" "unrelated top-level keys survive"
@@ -224,5 +224,51 @@ C1="$S/coll"; mkrepo "$C1"
 cfgset "$C1/roles.config.json" 'c["extraRoles"]=[{"name":"pm","description":"my own pm"}]'
 out="$(bash "$I" --target "$C1" 2>&1)"; t_eq 1 "$?" "an extraRoles entry named like a built-in is refused"
 case "$out" in *"collides with the built-in role"*'"roles": {"pm"'*) t_pass "and the message says how to change a built-in instead";; *) t_fail "collision message: $out";; esac
+
+echo "-- v0.4.0: edit, do not redesign (default); design.source/ledger/exportsDir/callBudget (#20, #21)"
+for r in ui concept; do
+  f="$P/.claude/agents/acme-$r.md"
+  grep -q '^## Edit, do not redesign$' "$f" && grep -q 'changed/kept list' "$f" && t_pass "$r carries the edit-do-not-redesign rule by default" || t_fail "$r edit-do-not-redesign"
+  grep -q '^## Design source' "$f" && t_fail "$r must not carry Design source without design.source" || t_pass "$r has no Design source section by default (source=code)"
+  grep -q '^## Approvals ledger' "$f" && t_fail "$r must not carry the ledger step without design.ledger" || t_pass "$r has no ledger step without design.ledger"
+done
+D1="$S/design"; mkrepo "$D1"
+cfgset "$D1/roles.config.json" 'c["design"]={"source":"figma","file":"https://design.example/file/abc","signoff":True,"exportsDir":"docs/design/exports","callBudget":12,"ledger":"docs/design/ledger.md"}'
+mkdir -p "$D1/docs/design"; cp "$kit/examples/design-ledger.md" "$D1/docs/design/ledger.md"
+bash "$I" --target "$D1" >/dev/null 2>&1; t_eq 0 "$?" "install with design.source=figma"
+for r in ui concept; do
+  f="$D1/.claude/agents/acme-$r.md"
+  grep -q '^## Design source' "$f" && grep -q 'https://design.example/file/abc' "$f" && grep -q 'docs/design/exports' "$f" && grep -q 'at most 12 ' "$f" && t_pass "$r renders the figma rules with file, exportsDir and budget" || t_fail "$r figma rules"
+  grep -q '^## Approvals ledger' "$f" && grep -q 'docs/design/ledger.md' "$f" && t_pass "$r reads the ledger first" || t_fail "$r ledger step"
+done
+grep -q 'signed-off frame' "$D1/.claude/agents/acme-ui.md" && grep -q 'FRAME-SYNC:' "$D1/.claude/agents/acme-ui.md" && t_pass "ui builds only from a signed-off frame and flags the frame for sync" || t_fail "ui signoff / sync"
+grep -q 'in the design file' "$D1/.claude/agents/acme-concept.md" && t_pass "concept renders in the design tool" || t_fail "concept renders in tool"
+bash "$I" --target "$D1" --check >/dev/null 2>&1; t_eq 0 "$?" "--check clean with design keys"
+cfgset "$D1/roles.config.json" 'c["design"]["signoff"]=False'
+bash "$I" --target "$D1" >/dev/null 2>&1
+grep -q 'signed-off frame' "$D1/.claude/agents/acme-ui.md" && t_fail "signoff=false must drop the sign-off gate" || t_pass "signoff=false drops the sign-off gate"
+cfgset "$D1/roles.config.json" 'c["design"]={"source":"sketch"}'
+out="$(bash "$I" --target "$D1" 2>&1)"; t_eq 1 "$?" "an unknown design.source is refused"
+case "$out" in *design.source*code*figma*) t_pass "with the vocabulary named";; *) t_fail "design.source message: $out";; esac
+cfgset "$D1/roles.config.json" 'c["design"]={"source":"figma"}'
+bash "$I" --target "$D1" >/dev/null 2>&1; t_eq 1 "$?" "design.source=figma without design.file is refused"
+cfgset "$D1/roles.config.json" 'c["design"]={"source":"figma","file":"x","callBudget":0}'
+bash "$I" --target "$D1" >/dev/null 2>&1; t_eq 1 "$?" "a non-positive callBudget is refused"
+cfgset "$D1/roles.config.json" 'c["design"]={"source":"code","ledger":"docs/design/nope.md"}'
+out="$(bash "$I" --target "$D1" 2>&1)"; t_eq 0 "$?" "a ledger path that does not exist is a warning, not an error"
+case "$out" in *WARNING*design.ledger*nope.md*) t_pass "and the warning names it";; *) t_fail "ledger warning: $out";; esac
+[ -f "$kit/examples/design-ledger.md" ] && grep -q 'KEEP' "$kit/examples/design-ledger.md" && grep -q 'CHANGE-REQUESTED' "$kit/examples/design-ledger.md" && t_pass "examples/design-ledger.md template ships" || t_fail "ledger template"
+
+echo "-- v0.4.0: the lead reports state, not narration (#22)"
+for f in "$P/.claude/agents/acme-lead.md" "$P/.claude/skills/acme-lead-rules/SKILL.md"; do
+  grep -qi 'no step narration' "$f" && grep -q 'changes nothing' "$f" && grep -q 'state block' "$f" && t_pass "silence rules in ${f##*/.claude/}" || t_fail "silence rules in ${f##*/.claude/}"
+  grep -q '\*\*Live\*\*' "$f" && grep -q '\*\*Running\*\*' "$f" && grep -q '\*\*Needs you\*\*' "$f" && t_pass "default brief carries Live / Running / Needs you in ${f##*/.claude/}" || t_fail "Live/Running/Needs you in ${f##*/.claude/}"
+done
+cfgset "$D1/roles.config.json" 'c["design"]={"source":"code"}; c["lead"]["reportRule"]="Report as a weekly memo."'
+bash "$I" --target "$D1" >/dev/null 2>&1
+for f in "$D1/.claude/agents/acme-lead.md" "$D1/.claude/skills/acme-lead-rules/SKILL.md"; do
+  grep -qi 'no step narration' "$f" && grep -q 'weekly memo' "$f" && ! grep -q 'Executive brief' "$f" && t_pass "with reportRule the silence rules stay and the brief goes in ${f##*/.claude/}" || t_fail "reportRule + silence in ${f##*/.claude/}"
+done
+grep -qi 'no step narration' "$kit/docs/lead.md" && t_pass "docs/lead.md carries the silence rules" || t_fail "docs/lead.md silence rules"
 
 t_done

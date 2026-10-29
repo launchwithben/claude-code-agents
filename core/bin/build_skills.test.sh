@@ -35,4 +35,19 @@ printf 'acme-rules | d | docs/missing.md#Git\n' > "$T_ROOT/roles/skills.txt"
 bash "$B" >/dev/null 2>&1;          t_eq 1 "$?" "a missing doc is an error"
 rm "$T_ROOT/roles/skills.txt"
 bash "$B" >/dev/null 2>&1;          t_eq 0 "$?" "no skills file -> nothing to build, exit 0"
+# #14: a skill over the ~900-word guidance warns (stderr) and still builds; --check warns too, never fails on size
+printf '# Rules\n\n## Big\n' > "$T_ROOT/docs/big.md"
+for i in $(seq 1 120); do printf 'word%s alpha beta gamma delta epsilon zeta eta theta.\n' "$i" >> "$T_ROOT/docs/big.md"; done
+printf '# Rules\n\n## Git\n2. pathspec\n' > "$T_ROOT/docs/rules.md"
+printf 'acme-big | Big | docs/big.md#Big\nacme-rules | Rules | docs/rules.md#Git\n' > "$T_ROOT/roles/skills.txt"
+out="$(bash "$B" 2>&1 >/dev/null)"; rc=$?
+t_eq 0 "$rc" "an oversize skill still builds (warning, not error)"
+case "$out" in *WARNING*acme-big*words*) t_pass "an oversize skill warns, naming it and its word count";; *) t_fail "oversize warning: $out";; esac
+case "$out" in *acme-rules*) t_fail "a small skill must not warn: $out";; *) t_pass "a small skill does not warn";; esac
+out="$(bash "$B" --check 2>&1)"; rc=$?
+t_eq 0 "$rc" "--check stays clean for an oversize but current skill"
+case "$out" in *WARNING*acme-big*) t_pass "--check repeats the warning";; *) t_fail "--check warning: $out";; esac
+out="$(ROLE_KIT_SKILL_MAX_WORDS=5000 bash "$B" 2>&1 >/dev/null)"
+case "$out" in *WARNING*) t_fail "ROLE_KIT_SKILL_MAX_WORDS raises the threshold: $out";; *) t_pass "ROLE_KIT_SKILL_MAX_WORDS raises the threshold";; esac
+rm "$T_ROOT/roles/skills.txt"
 t_done

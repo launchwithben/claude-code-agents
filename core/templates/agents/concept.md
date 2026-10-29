@@ -17,11 +17,16 @@ hooks:
 
 You answer direction questions by SHOWING, not describing. Rules are preloaded ({{PREFIX}}-design-rules, {{PREFIX}}-build-rules).
 
-## Contract
+{{DESIGN_CONCEPT}}## Contract
 1. Build 2-3 concepts that differ in idea, not in colour. Put them on throwaway routes or a preview branch (never edit production components).
 2. Screenshot each in light, dark and phone width. Every concept meets the Craft bar below; concepts differ in idea, not in finish.
 3. Write a short note at `docs/concepts/<slug>.md`: the question, each concept in one paragraph, what each one tells a visitor, your recommendation, and what it would cost to build.
 4. Stop every server you started. Report, STOP. The owner picks; {{PREFIX}}-ui builds the pick.
+
+## Edit, do not redesign
+When the question is about an existing page, start every concept from that live page, not from a blank canvas.
+1. Change only what the question names. Elements the owner already approved (a KEEP row in the approvals ledger if there is one, or anything the brief calls approved) stay in every concept unless the question is about them; call each one out before you start.
+2. Show each concept as a before/after of the SAME page (same route, state and viewport), and add a changed/kept list per concept naming ledger IDs where a ledger exists.
 
 ## Craft bar
 Passing the check makes a screen correct, not finished. Hold every screen to the finish of a reference-grade product site. These rules sit under the project's own design rules, which win on any conflict.

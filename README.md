@@ -43,7 +43,7 @@ Requirements: Claude Code, `bash`, `python3` (hooks and installer, stdlib only),
 
 ```bash
 # 1. get the kit at a tag, next to your project (not inside it)
-git clone --branch v0.3.0 https://github.com/launchwithben/claude-code-agents ../claude-code-agents
+git clone --branch v0.4.0 https://github.com/launchwithben/claude-code-agents ../claude-code-agents
 
 # 2. from your project root: write a starter overlay, then edit it
 bash ../claude-code-agents/install.sh --init
@@ -69,12 +69,12 @@ The installer copies the core into `scripts/roles-kit/`, renders the agents into
 ## Update
 
 ```bash
-cd ../claude-code-agents && git fetch --tags && git checkout v0.3.0     # whichever tag you chose
+cd ../claude-code-agents && git fetch --tags && git checkout v0.4.0     # whichever tag you chose
 cd - && bash ../claude-code-agents/install.sh --check                   # what would change
 bash ../claude-code-agents/install.sh                                   # apply it
 ```
 
-`install.sh --check` renders everything again in memory and compares it with what is on disk. It exits 1 and lists `MISSING`, `DRIFT` (a core file or rendered agent differs from the kit, including a local edit) or `STALE` (a file the new kit no longer ships), plus any generated skill that no longer matches its doc and any kit hook missing from `settings.json`. Pin the version in the overlay (`"kit": "0.3.0"`) and the installer refuses a checkout of a different version.
+`install.sh --check` renders everything again in memory and compares it with what is on disk. It exits 1 and lists `MISSING`, `DRIFT` (a core file or rendered agent differs from the kit, including a local edit) or `STALE` (a file the new kit no longer ships), plus any generated skill that no longer matches its doc and any kit hook missing from `settings.json`. Pin the version in the overlay (`"kit": "0.4.0"`) and the installer refuses a checkout of a different version.
 
 **Never edit installed core files in place** (`scripts/roles-kit/`, `.claude/agents/<prefix>-*.md`): the next install overwrites them. Change the overlay, or change the kit (see [MAINTENANCE.md](MAINTENANCE.md) for how a fix found in a project flows back here).
 
@@ -97,11 +97,12 @@ Everything project-specific lives here. A full example is `examples/roles.config
 | `mainSessionRoles` | Roles that are chats, never subagents (default `["lead"]`). |
 | `mainBranch`, `chains` | "Landed" means an ancestor of this branch; the file the PM writes ready chains to (default `docs/pm/chains.md`). |
 | `lead` | `{focusCommand, shipStep, promoteRule, reportRule, routing, appRoute, hookScope, extraRulesFile}`: text and commands the lead's loop uses. `appRoute` (e.g. `/lead-agent`) is how the desktop app starts the lead, used verbatim by the picker, the roles menu and the routing guard. `hookScope` is `agent` (default: the heartbeat lives on the lead agent file, so it fires only in a `--agent <prefix>-lead` chat) or `project` (the recorder AND the heartbeat are registered in `settings.json` for every session, for desktop-app users who become the lead by invoking a command in a plain chat; safe, because both are keyed by `session_id` and a session that never dispatched is never nudged). `extraRulesFile` is appended to the lead rules as "Project rules". `reportRule` (one line) replaces the default owner report, an Executive brief. |
+| `design` | `{source, file, signoff, exportsDir, callBudget, ledger}`: how the `ui` and `concept` roles design. `source` is `code` (default, no change) or `figma` (any design tool): then `file` is required, `concept` renders in the design file, `ui` builds only from a frame the owner signed off (`signoff`, default `true`; `false` = build from the frame the brief names), both read exported frames from `exportsDir` before spending design-tool quota, stay within `callBudget` design-tool calls and report the count, and `ui` ends with `FRAME-SYNC: <frame> needs sync \| none`. `ledger` is the path of an approvals ledger (template: [examples/design-ledger.md](examples/design-ledger.md)) with `KEEP` / `KILL` / `CHANGE-REQUESTED` rows and an ID per element; the roles read it first and hand back `LEDGER: changed <ids> \| kept <ids>` (add `line:FRAME-SYNC` or `line:LEDGER` to `handback` to have the Stop hook require them). Independent of all this, `ui` and `concept` always follow *Edit, do not redesign*: change only what the ask names, call out approved elements before touching them, return a before/after of the same page and a changed/kept list. |
 | `pm` | `{repo, cursor, readyLabel, readFirst, rules, deltaCommand, ackCommand, paths}`: board specifics. Point `deltaCommand` at your own script if you need status fields. |
 
 **Territory file** (`roles/territory.txt`): `<role> <edit|all> <path>`, first match wins. `edit` = anyone may read, only the owner may change; `all` = only the owner may even read, search or be briefed about it; role `-` = owned by nobody (the lead keeps it); `re:<regex>` for patterns. What counts as a write is judged **per target**: a redirect target, a `tee`/`cp`/`mv`/`ln` destination, `rm`/`touch`/`mkdir` arguments, a `sed -i` file, a path an interpreter opens for writing. A brief to an agent is denied only when none of the territories it names belongs to the dispatched agent. Override when you ask for hands-on work: `touch tmp/role-override` (30 minutes).
 
-**Skills file** (`roles/skills.txt`), one line per skill: `name | description | path/to/doc.md#Heading prefix ; other.md#Heading [| key: value ; key: value]`. The optional 4th column declares more frontmatter, written after `description:` (for example `user-invocable: true`). `build_skills.sh` writes `.claude/skills/<name>/SKILL.md` from those `## ` sections; `--check` fails on drift. A generated skill replaces the starter of the same name.
+**Skills file** (`roles/skills.txt`), one line per skill: `name | description | path/to/doc.md#Heading prefix ; other.md#Heading [| key: value ; key: value]`. The optional 4th column declares more frontmatter, written after `description:` (for example `user-invocable: true`). `build_skills.sh` writes `.claude/skills/<name>/SKILL.md` from those `## ` sections; `--check` fails on drift. A skill over about 900 words prints a `WARNING` (it is preloaded on every dispatch; `ROLE_KIT_SKILL_MAX_WORDS` changes the threshold; never an error). A generated skill replaces the starter of the same name.
 
 ## Use it
 
