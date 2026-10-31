@@ -3,7 +3,8 @@
 
 Blocks (exit 2, message on stderr) unless the evidence the role's contract names is in `last_assistant_message`.
 Contracts come from roles.config.json ("handback": {"<suffix or full role name>": ["gate", "screenshots", ...]});
-defaults: dev [gate], ui [gate, screenshots], concept [screenshots, concept-note], pm [cursor]. A role whose
+defaults: dev [gate], ui [gate, screenshots], concept [screenshots, concept-note], pm [cursor],
+design [line:FRAMES, line:EXPORTS, line:CALLS, line:REQUESTER, line:OWNER-SIGNOFF]. A role whose
 suffix has no contract is allowed. Evidence kinds: gate, screenshots, concept-note, cursor, commit, line:NAME, line:NAME~REGEX.
 Any role may instead end with `GATE-SKIPPED: <reason>`.
 Fails OPEN on its own errors and lets an agent through after 2 consecutive blocks.

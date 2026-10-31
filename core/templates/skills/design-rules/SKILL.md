@@ -1,7 +1,7 @@
 ---
 name: {{PREFIX}}-design-rules
 description: >-
-  This project's non-negotiable design rules: tokens, light/dark, icons, components, the look. Preloaded into the ui and concept roles; use when designing or building any page or component.
+  This project's non-negotiable design rules: tokens, light/dark, icons, components, the look. Preloaded into the ui, design and concept roles; use when designing or building any page or component.
 ---
 
 # Design rules (distilled; the source is cited on every rule)

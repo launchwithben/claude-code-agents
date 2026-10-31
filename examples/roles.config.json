@@ -1,5 +1,5 @@
 {
-  "kit": "0.4.1",
+  "kit": "0.5.0",
   "prefix": "acme",
   "scope": "project",
   "roles": ["lead", "pm", "dev", "ui", "concept"],
