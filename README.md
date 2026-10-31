@@ -2,9 +2,9 @@
 
 **Turn one Claude Code chat into a team of specialists.**
 
-> **Status: Active.** Maintained by [Launch With Ben](https://launchwithben.com). See [MAINTENANCE.md](MAINTENANCE.md) for what that means, how to hear about updates, and what happens if it is ever sunset. Changes are in [CHANGELOG.md](CHANGELOG.md). Current version: **0.3.0**.
+> **Status: Active.** Maintained by [Launch With Ben](https://launchwithben.com). See [MAINTENANCE.md](MAINTENANCE.md) for what that means, how to hear about updates, and what happens if it is ever sunset. Changes are in [CHANGELOG.md](CHANGELOG.md). Current version: **0.5.0**.
 
-A lead, a project manager, a developer, a UI builder and a concept designer, each with its own scope, its own rules and (for the roles that edit code) its own copy of the repo. You talk to the lead. It scopes the work, files one issue per unit, sends every job to the right specialist in parallel, reads the diff that comes back and merges it. A role cannot hand back without showing its check result, or the reason it had none.
+A lead, a project manager, a developer, a UI builder and a concept designer (plus, for projects that design in Figma, a designer that owns the design file), each with its own scope, its own rules and (for the roles that edit code) its own copy of the repo. You talk to the lead. It scopes the work, files one issue per unit, sends every job to the right specialist in parallel, reads the diff that comes back and merges it. A role cannot hand back without showing its check result, or the reason it had none.
 
 No extra windows and no extra subscriptions: the roles are subagents of the Claude Code you already run.
 
@@ -23,7 +23,7 @@ Written up in full at **launchwithben.com/notes/claude-code-agents** (the post e
 
 | Part | What it does |
 |---|---|
-| `core/templates/agents/` | The roles: `lead` (the main-session seat), `pm`, `dev`, `ui`, `concept`, plus any extra roles your overlay declares. Rendered with your prefix, gate and hook paths. |
+| `core/templates/agents/` | The roles: `lead` (the main-session seat), `pm`, `dev`, `ui`, `concept`, `design` (opt-in; needs `design.source: "figma"`), plus any extra roles your overlay declares. Rendered with your prefix, gate and hook paths. |
 | `core/hooks/role-handback-check` | Blocks a role from finishing until its report has the evidence its contract names (`GATE: ... -> PASS`, `SCREENSHOTS:`, `CURSOR:` ...) or an explicit `GATE-SKIPPED: <reason>`. Contracts per role come from the overlay. It checks what the role REPORTS, not that the command ran. |
 | `core/hooks/role-territory-guard` | A file maps paths to the role that owns them; checked on every tool call. Judges writes **per target**, so running a script or copying a file out is not an edit of it. |
 | `core/hooks/role-routing-guard` | The fallback for repos with no territory file: stops the lead sending an edit to a generic worker. Also refuses to dispatch the lead seat as a subagent. |
@@ -43,7 +43,7 @@ Requirements: Claude Code, `bash`, `python3` (hooks and installer, stdlib only),
 
 ```bash
 # 1. get the kit at a tag, next to your project (not inside it)
-git clone --branch v0.4.1 https://github.com/launchwithben/claude-code-agents ../claude-code-agents
+git clone --branch v0.5.0 https://github.com/launchwithben/claude-code-agents ../claude-code-agents
 
 # 2. from your project root: write a starter overlay, then edit it
 bash ../claude-code-agents/install.sh --init
@@ -69,12 +69,12 @@ The installer copies the core into `scripts/roles-kit/`, renders the agents into
 ## Update
 
 ```bash
-cd ../claude-code-agents && git fetch --tags && git checkout v0.4.1     # whichever tag you chose
+cd ../claude-code-agents && git fetch --tags && git checkout v0.5.0     # whichever tag you chose
 cd - && bash ../claude-code-agents/install.sh --check                   # what would change
 bash ../claude-code-agents/install.sh                                   # apply it
 ```
 
-`install.sh --check` renders everything again in memory and compares it with what is on disk. It exits 1 and lists `MISSING`, `DRIFT` (a core file or rendered agent differs from the kit, including a local edit) or `STALE` (a file the new kit no longer ships), plus any generated skill that no longer matches its doc and any kit hook missing from `settings.json`. Pin the version in the overlay (`"kit": "0.4.1"`) and the installer refuses a checkout of a different version.
+`install.sh --check` renders everything again in memory and compares it with what is on disk. It exits 1 and lists `MISSING`, `DRIFT` (a core file or rendered agent differs from the kit, including a local edit) or `STALE` (a file the new kit no longer ships), plus any generated skill that no longer matches its doc and any kit hook missing from `settings.json`. Pin the version in the overlay (`"kit": "0.5.0"`) and the installer refuses a checkout of a different version.
 
 **Never edit installed core files in place** (`scripts/roles-kit/`, `.claude/agents/<prefix>-*.md`): the next install overwrites them. Change the overlay, or change the kit (see [MAINTENANCE.md](MAINTENANCE.md) for how a fix found in a project flows back here).
 
@@ -87,7 +87,7 @@ Everything project-specific lives here. A full example is `examples/roles.config
 | `prefix` | **Required.** Role prefix: agents are `<prefix>-lead`, `<prefix>-dev`... |
 | `kit` | Pin: the install refuses another kit version. |
 | `scope` | `project` (default) or `user`. |
-| `roles` | Built-in roles to install; default all of `lead, pm, dev, ui, concept`. Either a list, or an object of per-role options: `{"pm": {"bodyFile": "docs/pm-procedure.md", "bodyMode": "append" or "replace"}}`. `append` (default) puts your text after the kit's body; `replace` keeps the frontmatter and swaps the body. An `extraRoles` entry named like a built-in is refused. |
+| `roles` | Built-in roles to install; default all of `lead, pm, dev, ui, concept`; `design` is opt-in and refused unless `design.source` is `"figma"`. Either a list, or an object of per-role options: `{"pm": {"bodyFile": "docs/pm-procedure.md", "bodyMode": "append" or "replace"}}`. `append` (default) puts your text after the kit's body; `replace` keeps the frontmatter and swaps the body. An `extraRoles` entry named like a built-in is refused. |
 | `extraRoles` | `[{name, description, model, color, worktree, skills, contract, body or bodyFile, routes}]`: extra roles rendered from a generic template. |
 | `gate`, `extraGates` | THE check command (printed into every agent's contract) and any further ones. |
 | `handback` | Evidence each role must report: `{"dev": ["gate"], "ui": ["gate","screenshots"], ...}`. Kinds: `gate`, `screenshots`, `concept-note`, `cursor`, `commit`, `line:NAME` (a `NAME: <value>` line) and `line:NAME~REGEX` (the text after `NAME:` must match the regex, e.g. `line:CURSOR~\\S+ -> ACKED` blocks a PM run that did not ack its cursor; a regex that does not compile is ignored). Keyed by suffix or full role name. |
@@ -97,12 +97,27 @@ Everything project-specific lives here. A full example is `examples/roles.config
 | `mainSessionRoles` | Roles that are chats, never subagents (default `["lead"]`). |
 | `mainBranch`, `chains` | "Landed" means an ancestor of this branch; the file the PM writes ready chains to (default `docs/pm/chains.md`). |
 | `lead` | `{focusCommand, shipStep, promoteRule, reportRule, routing, appRoute, hookScope, extraRulesFile}`: text and commands the lead's loop uses. `appRoute` (e.g. `/lead-agent`) is how the desktop app starts the lead, used verbatim by the picker, the roles menu and the routing guard. `hookScope` is `agent` (default: the heartbeat lives on the lead agent file, so it fires only in a `--agent <prefix>-lead` chat) or `project` (the recorder AND the heartbeat are registered in `settings.json` for every session, for desktop-app users who become the lead by invoking a command in a plain chat; safe, because both are keyed by `session_id` and a session that never dispatched is never nudged). `extraRulesFile` is appended to the lead rules as "Project rules". `reportRule` (one line) replaces the default owner report, an Executive brief. |
-| `design` | `{source, file, signoff, exportsDir, callBudget, ledger, pageNaming}`: how the `ui` and `concept` roles design. `source` is `code` (default, no change) or `figma` (any design tool): then `file` is required, `concept` renders in the design file, `ui` builds only from a frame the owner signed off (`signoff`, default `true`; `false` = build from the frame the brief names), both read exported frames from `exportsDir` before spending design-tool quota, stay within `callBudget` design-tool calls and report the count, keep **one page per design round** in the design file (named by `pageNaming`, default `{surface} v{n}`, e.g. "Checkout v2": a new round duplicates the last approved page, a page holds only that version's frames, the review link is the page link, older versions are archived only with the owner's sign-off, never deleted), and `ui` ends with `FRAME-SYNC: <frame> needs sync \| none`. `ledger` is the path of an approvals ledger (template: [examples/design-ledger.md](examples/design-ledger.md)) with `KEEP` / `KILL` / `CHANGE-REQUESTED` rows and an ID per element; the roles read it first and hand back `LEDGER: changed <ids> \| kept <ids>` (add `line:FRAME-SYNC` or `line:LEDGER` to `handback` to have the Stop hook require them). Independent of all this, `ui` and `concept` always follow *Edit, do not redesign*: change only what the ask names, call out approved elements before touching them, return a before/after of the same page and a changed/kept list. |
+| `design` | `{source, file, signoff, exportsDir, callBudget, ledger, pageNaming}`: how the `ui` and `concept` roles design. `source` is `code` (default, no change) or `figma` (any design tool): then `file` is required, `concept` renders in the design file, `ui` builds only from a frame the owner signed off (`signoff`, default `true`; `false` = build from the frame the brief names), both read exported frames from `exportsDir` before spending design-tool quota, stay within `callBudget` design-tool calls and report the count, keep **one page per design round** in the design file (named by `pageNaming`, default `{surface} v{n}`, e.g. "Checkout v2": a new round duplicates the last approved page, a page holds only that version's frames, the review link is the page link, older versions are archived only with the owner's sign-off, never deleted), and `ui` ends with `FRAME-SYNC: <frame> needs sync \| none`. `ledger` is the path of an approvals ledger (template: [examples/design-ledger.md](examples/design-ledger.md)) with `KEEP` / `KILL` / `CHANGE-REQUESTED` rows and an ID per element; the roles read it first and hand back `LEDGER: changed <ids> \| kept <ids>` (add `line:FRAME-SYNC` or `line:LEDGER` to `handback` to have the Stop hook require them). With the opt-in `design` role installed (`"roles": [..., "design"]`, requires `source: "figma"`), `ui` routes `FRAME-SYNC` to it and the lead routes design-first work and `FRAME-SYNC` handbacks to it: see *The design role* below. Independent of all this, `ui` and `concept` always follow *Edit, do not redesign*: change only what the ask names, call out approved elements before touching them, return a before/after of the same page and a changed/kept list. |
 | `pm` | `{repo, cursor, readyLabel, readFirst, rules, deltaCommand, ackCommand, paths}`: board specifics. Point `deltaCommand` at your own script if you need status fields. |
 
 **Territory file** (`roles/territory.txt`): `<role> <edit|all> <path>`, first match wins. `edit` = anyone may read, only the owner may change; `all` = only the owner may even read, search or be briefed about it; role `-` = owned by nobody (the lead keeps it); `re:<regex>` for patterns. What counts as a write is judged **per target**: a redirect target, a `tee`/`cp`/`mv`/`ln` destination, `rm`/`touch`/`mkdir` arguments, a `sed -i` file, a path an interpreter opens for writing. A brief to an agent is denied only when none of the territories it names belongs to the dispatched agent. Override when you ask for hands-on work: `touch tmp/role-override` (30 minutes).
 
 **Skills file** (`roles/skills.txt`), one line per skill: `name | description | path/to/doc.md#Heading prefix ; other.md#Heading [| key: value ; key: value]`. The optional 4th column declares more frontmatter, written after `description:` (for example `user-invocable: true`). `build_skills.sh` writes `.claude/skills/<name>/SKILL.md` from those `## ` sections; `--check` fails on drift. A skill over about 900 words prints a `WARNING` (it is preloaded on every dispatch; `ROLE_KIT_SKILL_MAX_WORDS` changes the threshold; never an error). A generated skill replaces the starter of the same name.
+
+## The design role
+
+For projects whose design lives in a design tool (`design.source: "figma"`), add `design` to `roles`. The design file is the source of truth for design: a change is cheap there and expensive in code, so design changes happen in the file first, then development builds from them. The role installs as `<prefix>-design` (sonnet, own worktree for exported PNGs) and is refused with a clear message if `design.source` is not `"figma"`.
+
+| It does | How |
+|---|---|
+| Keeps the design file current | the design system (variables, text styles, components) and the section, page and component frames; every value bound to a token; a new component only when a pattern is used 2 or more times |
+| Designs first | one new page per round, named by `design.pageNaming`, before anything is built |
+| Scales the owner's involvement with weight | **light** (a small clear-scope change, or one requested by another agent): does it, hands back, notifies the requester. **heavy** (a new pattern or page, an element the ledger marks KEEP, a brand or look change, anything the owner has not seen): prepares the frame and waits for sign-off, relayed by the lead (`design.signoff` as before) |
+| Closes the loop | on `FRAME-SYNC: <frame> needs sync` from `ui` or dev it updates the file to match what shipped, exports the PNG to `design.exportsDir` and replies done |
+| Respects the shared quota | reads exports first, one screenshot per deliverable, stays within `design.callBudget`, reports calls used |
+| Never | writes product code (the builder never edits the design file unless the brief says so) |
+
+Handback (default contract, enforced by the Stop hook): `FRAMES:`, `EXPORTS:`, `CALLS:`, `REQUESTER: <role or agent> notified | none`, `OWNER-SIGNOFF: needed | not needed (<why>)`, plus `LEDGER: changed <ids> | kept <ids>` when `design.ledger` is set (add `line:LEDGER` to `handback.design` to have the hook require it). Without the role installed, `ui` and the lead render exactly as before.
 
 ## Use it
 

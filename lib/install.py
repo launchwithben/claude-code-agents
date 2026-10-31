@@ -19,7 +19,8 @@ import sys
 
 KIT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 CORE = os.path.join(KIT, "core")
-ALL_ROLES = ["lead", "pm", "dev", "ui", "concept"]
+ALL_ROLES = ["lead", "pm", "dev", "ui", "design", "concept"]
+DEFAULT_ROLES = ["lead", "pm", "dev", "ui", "concept"]  # `design` is opt-in: it needs design.source "figma"
 MARK = "roles-kit/hooks/"
 TERRITORY_MATCHER = "Agent|Task|Read|Edit|Write|MultiEdit|NotebookEdit|Grep|Glob|Bash"
 
@@ -71,7 +72,7 @@ def load_config(path):
         die("%s must hold a JSON object" % path)
     if not re.match(r"^[a-z][a-z0-9]*(-[a-z0-9]+)*$", str(cfg.get("prefix") or "")):
         die('"prefix" is required in %s: lowercase words joined by dashes, e.g. "acme"' % path)
-    roles = cfg.get("roles", ALL_ROLES)
+    roles = cfg.get("roles", DEFAULT_ROLES)
     opts = {}
     if isinstance(roles, dict):  # {"pm": {"bodyFile": "...", "bodyMode": "append|replace"}}: per-role options
         for k, o in roles.items():
@@ -120,6 +121,9 @@ def load_config(path):
     for k in ("file", "exportsDir", "ledger", "pageNaming"):
         if k in d and not isinstance(d[k], str):
             die('"design.%s" must be a string' % k)
+    if "design" in cfg["_roles"] and d.get("source", "code") != "figma":
+        die('the "design" role keeps the design file current, so it needs "design.source": "figma" (and "design.file") in %s. '
+            'Set them, or remove "design" from "roles".' % path)
     cfg["_extras"] = extras
     return cfg
 
@@ -151,6 +155,8 @@ def design_vars(cfg, pfx):
         "DESIGN_F": "1" if figma else "",
         "DESIGN_FS": "1" if figma and signoff else "",
         "DESIGN_FN": "1" if figma and not signoff else "",
+        "DESIGN_ROLE": "1" if figma and "design" in cfg["_roles"] else "",
+        "DESIGN_NOROLE": "1" if figma and "design" not in cfg["_roles"] else "",
     }
     flags["DESIGN_FE"] = "1" if figma and flags["DESIGN_EXPORTS"] else ""
     flags["DESIGN_FB"] = "1" if figma and flags["DESIGN_BUDGET"] else ""
@@ -163,6 +169,11 @@ def design_vars(cfg, pfx):
     return {
         "DESIGN_UI": render(open(os.path.join(tpl, "ui.md")).read(), flags),
         "DESIGN_CONCEPT": render(open(os.path.join(tpl, "concept.md")).read(), flags),
+        "HAS_DESIGN": flags["DESIGN_ROLE"],
+        "DESIGN_ROLE": flags["DESIGN_ROLE"], "DESIGN_NOROLE": flags["DESIGN_NOROLE"], "DESIGN_F": flags["DESIGN_F"],
+        "DESIGN_FS": flags["DESIGN_FS"], "DESIGN_FN": flags["DESIGN_FN"], "DESIGN_FE": flags["DESIGN_FE"],
+        "DESIGN_FB": flags["DESIGN_FB"], "DESIGN_FILE": flags["DESIGN_FILE"], "DESIGN_EXPORTS": flags["DESIGN_EXPORTS"],
+        "DESIGN_BUDGET": flags["DESIGN_BUDGET"], "DESIGN_LEDGER": flags["DESIGN_LEDGER"], "DESIGN_PAGE": flags["DESIGN_PAGE"],
         "DESIGN_HANDBACK_UI": hb,
     }
 
@@ -180,6 +191,8 @@ def variables(cfg, paths):
         bits = []
         if "ui" in cfg["_roles"]:
             bits.append("UI -> `%s-ui`" % pfx)
+        if "design" in cfg["_roles"]:
+            bits.append("design file work, design-first changes and `FRAME-SYNC ... needs sync` handbacks -> `%s-design`" % pfx)
         if "concept" in cfg["_roles"]:
             bits.append("direction -> `%s-concept`" % pfx)
         if "pm" in cfg["_roles"]:
@@ -313,7 +326,7 @@ def plan(cfg, target, scope):
     if "lead" in cfg["_roles"]:
         skill(pfx + "-lead-rules", "lead-rules", files)
     skill(pfx + "-build-rules", "build-rules", starters)
-    if "ui" in cfg["_roles"] or "concept" in cfg["_roles"]:
+    if "ui" in cfg["_roles"] or "concept" in cfg["_roles"] or "design" in cfg["_roles"]:
         skill(pfx + "-design-rules", "design-rules", starters)
     # 4. settings entries
     hooks = v["HOOKS"]

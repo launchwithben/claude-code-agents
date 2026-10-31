@@ -2,6 +2,20 @@
 
 All notable changes to this kit are listed here, newest first. The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and the project uses [Semantic Versioning](https://semver.org/). To hear about releases, use GitHub's **Watch → Custom → Releases**.
 
+## [0.5.0] - 2026-10-30
+
+A `design` role: the design file is the source of truth, design first, then build (#26). No breaking changes: the role is opt-in, and a project that does not add it gets byte-identical `ui`, `concept` and `lead` agents. Re-run `install.sh` after bumping `kit`.
+
+### Added
+- **`design` built-in role** (`<prefix>-design`, sonnet, own worktree), installable only with `design.source: "figma"`; any other source is refused with a message that names the key. It keeps the design system (variables, text styles, components) and the section, page and component frames current; designs improvements in the design file first, one page per round named by `design.pageNaming`; reuses components (a new one only when used 2 or more times) and binds every value to a token; never writes product code.
+- **Owner involvement scales with weight.** Light work (a small clear-scope change, or one requested by another agent) is done and handed back with the requester notified. Heavy work (a new pattern or page, an element the ledger marks KEEP, a brand or look change, anything the owner has not seen) is prepared and waits for the owner's sign-off, relayed by the lead; `design.signoff: false` behaves as in 0.4.0.
+- **Loop-back for `FRAME-SYNC`.** With the role installed, `ui` reports what differs between frame and build under its `FRAME-SYNC: <frame> needs sync` line, and the lead (agent, rules skill and `docs/lead.md`) routes those handbacks and design-first work to `<prefix>-design`, which updates the file, exports the PNG to `design.exportsDir` and replies done. Without the role, `ui` and the lead are unchanged.
+- **Default handback contract for `design`:** `FRAMES`, `EXPORTS`, `CALLS`, `REQUESTER: <role or agent> notified | none`, `OWNER-SIGNOFF: needed | not needed (<why>)`; `LEDGER: changed <ids> | kept <ids>` is rendered when `design.ledger` is set and required by adding `line:LEDGER` to `handback.design`. Respects `design.callBudget` (exports first, one screenshot per deliverable, calls reported).
+- Fixtures: render, refusal without figma, opt-in default, ui and lead routing with and without the role, the hook's default contract, `--check` clean.
+
+### Upgrading
+Bump `kit` in `roles.config.json` to `0.5.0`, run `install.sh --check`, then `install.sh`. To use the role set `design.source: "figma"` and `design.file`, add `"design"` to `roles` (list or object form), then restart Claude Code so the new agent file is seen. Run `/roles` or ask the lead; nothing else changes.
+
 ## [0.4.1] - 2026-10-29
 
 Figma page per design round (#24). No breaking changes; re-run `install.sh` to render the agents again.

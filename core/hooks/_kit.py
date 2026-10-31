@@ -19,6 +19,7 @@ DEFAULT_CONTRACTS = {
     "ui": ["gate", "screenshots"],
     "concept": ["screenshots", "concept-note"],
     "pm": ["cursor"],
+    "design": ["line:FRAMES", "line:EXPORTS", "line:CALLS", "line:REQUESTER", "line:OWNER-SIGNOFF"],
 }
 DEFAULT_GENERIC_AGENTS = ["bulk-worker", "general-purpose", "full-stack-developer", "haiku-worker", "claude"]
 DEFAULT_MAIN_SESSION = ["lead"]

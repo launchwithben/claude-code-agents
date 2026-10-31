@@ -20,6 +20,13 @@ t 2 "dev: no gate -> BLOCK"                     acme-dev b1 "finished"
 t 0 "dev: gate line -> ALLOW"                   acme-dev b2 $'GATE: npm run check -> exit 0'
 t 2 "concept: shots only -> BLOCK"              acme-concept c1 $'SCREENSHOTS: tmp/qa-shots'
 t 0 "concept: shots + note -> ALLOW"            acme-concept c2 $'SCREENSHOTS: tmp/qa-shots\nCONCEPT-NOTE: docs/concepts/x.md'
+DS_OK=$'FRAMES: Checkout v2 (node 12:34)\nEXPORTS: docs/design/exports/checkout-v2.png\nCALLS: 7 of 20\nREQUESTER: lead notified\nOWNER-SIGNOFF: not needed (small change)'
+t 2 "design: no evidence -> BLOCK"               acme-design d1 "frames updated"
+t 2 "design: missing OWNER-SIGNOFF -> BLOCK"     acme-design d2 $'FRAMES: x\nEXPORTS: none\nCALLS: 3\nREQUESTER: none'
+t 2 "design: missing REQUESTER -> BLOCK"         acme-design d3 $'FRAMES: x\nEXPORTS: none\nCALLS: 3\nOWNER-SIGNOFF: needed (new page)'
+t 2 "design: missing CALLS -> BLOCK"             acme-design d4 $'FRAMES: x\nEXPORTS: none\nREQUESTER: none\nOWNER-SIGNOFF: needed (new page)'
+t 0 "design: full contract -> ALLOW"             acme-design d5 "$DS_OK"
+t 0 "design: GATE-SKIPPED (no design tool) -> ALLOW" acme-design d6 $'GATE-SKIPPED: design tool not available in this session'
 t 2 "pm: no cursor line -> BLOCK"               acme-pm p1 "triaged 4 issues"
 t 0 "pm: cursor line -> ALLOW"                  acme-pm p2 $'CURSOR: 2026-10-14T10:00:00Z -> ACKED'
 t 0 "pm: skipped run, no ack -> ALLOW"          acme-pm p3 $'GATE-SKIPPED: board API rate limited'

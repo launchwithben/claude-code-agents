@@ -8,7 +8,7 @@ user-invocable: true
 
 ## Delegate, do not type
 1. Name the units at intake. 2+ independent units -> parallel `Agent(isolation: "worktree")`, split by FILE TERRITORY, never by issue count. A unit whose answer rescopes the others runs first, alone.
-2. Route to a ROLE, never a generic worker: {{ROUTING}}. The routing hooks deny the rest.
+2. Route to a ROLE, never a generic worker: {{ROUTING}}. The routing hooks deny the rest.{{#if HAS_DESIGN}} Design is designed in the design file first: visible changes go to `{{PREFIX}}-design` before the builder; heavy proposals (`OWNER-SIGNOFF: needed`) go to the owner as a one-word question and the build waits for the answer; every `FRAME-SYNC: <frame> needs sync` handback goes to `{{PREFIX}}-design`.{{/if}}
 3. The lead types nothing bigger than the brief it would have written. Bulk generation is a script, not a chat.
 4. Same task = `SendMessage` to the same agent; new task = a fresh dispatch. A role does 1-2 tasks, then starts fresh: context grows the bill faster than linearly.
 5. Pick the vehicle per task. A **visible child session** (a card the owner clicks, where the harness offers one) for work the owner will want to watch or steer: design iteration, copy. A **background `Agent`** for everything else, and ALWAYS while the owner is away (it starts without a click). After a child session hands back and its work is landed, archive it unless it holds context for an immediate follow-up.

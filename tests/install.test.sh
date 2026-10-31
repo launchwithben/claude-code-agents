@@ -37,7 +37,7 @@ for f in .claude/agents/acme-lead.md .claude/agents/acme-pm.md .claude/agents/ac
          scripts/roles-kit/bin/ask.sh scripts/roles-kit/bin/kit-check scripts/roles-kit/bin/roles-pulse.mjs; do
   [ -f "$P/$f" ] && t_pass "installed $f" || t_fail "installed $f"
 done
-t_eq 0.4.1 "$(cat "$P/scripts/roles-kit/VERSION")" "the kit version is recorded"
+t_eq 0.5.0 "$(cat "$P/scripts/roles-kit/VERSION")" "the kit version is recorded"
 echo "-- settings.json was MERGED, not overwritten"
 SJ="$P/.claude/settings.json"
 t_eq '["Bash(ls:*)"]' "$(jget "$SJ" 'json.dumps(d["permissions"]["allow"])')" "unrelated top-level keys survive"
@@ -282,5 +282,35 @@ for f in "$D1/.claude/agents/acme-lead.md" "$D1/.claude/skills/acme-lead-rules/S
   grep -qi 'no step narration' "$f" && grep -q 'weekly memo' "$f" && ! grep -q 'Executive brief' "$f" && t_pass "with reportRule the silence rules stay and the brief goes in ${f##*/.claude/}" || t_fail "reportRule + silence in ${f##*/.claude/}"
 done
 grep -qi 'no step narration' "$kit/docs/lead.md" && t_pass "docs/lead.md carries the silence rules" || t_fail "docs/lead.md silence rules"
+
+echo "-- v0.5.0: the design role (#26): design file first, then build"
+[ -f "$P/.claude/agents/acme-design.md" ] && t_fail "design is opt-in: a default install must not render it" || t_pass "design is opt-in: not installed by the default role list"
+G1="$S/dsg"; mkrepo "$G1"
+cfgset "$G1/roles.config.json" 'c["roles"]=["lead","dev","ui","design"]; del c["extraRoles"]'
+out="$(bash "$I" --target "$G1" 2>&1)"; t_eq 1 "$?" "role design without design.source=figma is refused"
+case "$out" in *design*'"figma"'*) t_pass "and the message names design.source figma";; *) t_fail "design refusal message: $out";; esac
+cfgset "$G1/roles.config.json" 'c["design"]={"source":"code"}'
+bash "$I" --target "$G1" >/dev/null 2>&1; t_eq 1 "$?" "role design with design.source=code is refused"
+cfgset "$G1/roles.config.json" 'c["design"]={"source":"figma","file":"https://design.example/file/abc","signoff":True,"exportsDir":"docs/design/exports","callBudget":12,"ledger":"docs/design/ledger.md"}'
+mkdir -p "$G1/docs/design"; cp "$kit/examples/design-ledger.md" "$G1/docs/design/ledger.md"
+bash "$I" --target "$G1" >/dev/null 2>&1; t_eq 0 "$?" "role design with design.source=figma installs"
+DG="$G1/.claude/agents/acme-design.md"
+grep -q '^name: acme-design$' "$DG" && grep -q '^model: sonnet$' "$DG" && grep -q 'isolation: worktree' "$DG" && grep -q 'role-handback-check.sh\\" acme-design' "$DG" && t_pass "design agent: name, sonnet, worktree, handback hook" || t_fail "design agent frontmatter"
+grep -q 'acme-design-rules' "$DG" && [ -f "$G1/.claude/skills/acme-design-rules/SKILL.md" ] && t_pass "design preloads the design rules (and the starter skill exists)" || t_fail "design rules skill"
+grep -q 'https://design.example/file/abc' "$DG" && grep -q 'docs/design/exports' "$DG" && grep -q 'at most 12 ' "$DG" && grep -q 'docs/design/ledger.md' "$DG" && grep -q '`{surface} v{n}`' "$DG" && t_pass "design renders file, exportsDir, budget, ledger and page naming" || t_fail "design overlay values"
+grep -q 'never write product code' "$DG" && grep -q 'FRAME-SYNC' "$DG" && grep -q 'used 2 or more times' "$DG" && grep -q 'bound to a token' "$DG" && t_pass "design: no product code, FRAME-SYNC loop, component and token rules" || t_fail "design core rules"
+for k in 'FRAMES:' 'EXPORTS:' 'CALLS:' 'LEDGER: changed' 'REQUESTER: <role or agent> notified | none' 'OWNER-SIGNOFF: needed | not needed'; do
+  grep -qF "$k" "$DG" && t_pass "design handback names $k" || t_fail "design handback names $k"
+done
+grep -q 'sign-off' "$DG" && grep -q 'KEEP' "$DG" && t_pass "design: heavy work waits for the owner and KEEP rows count as heavy" || t_fail "design heavy rule"
+grep -rq '{{' "$G1/.claude" && t_fail "unresolved placeholder with design installed" || t_pass "no unresolved placeholders with design installed"
+grep -qE 'acme-design([^-]|$)' "$G1/.claude/agents/acme-ui.md" && grep -q 'FRAME-SYNC: <frame> needs sync' "$G1/.claude/agents/acme-ui.md" && t_pass "ui routes FRAME-SYNC to acme-design when installed" || t_fail "ui -> design routing"
+grep -qE 'acme-design([^-]|$)' "$D1/.claude/agents/acme-ui.md" && t_fail "ui must not mention acme-design when the role is not installed" || t_pass "ui unchanged when design is not installed"
+grep -qE 'acme-design([^-]|$)' "$G1/.claude/agents/acme-lead.md" && grep -q 'needs sync' "$G1/.claude/agents/acme-lead.md" && grep -qE 'acme-design([^-]|$)' "$G1/.claude/skills/acme-lead-rules/SKILL.md" && t_pass "lead (agent and rules skill) routes FRAME-SYNC and design-first work to acme-design" || t_fail "lead -> design routing"
+grep -qE 'acme-design([^-]|$)' "$P/.claude/agents/acme-lead.md" && t_fail "lead must not mention acme-design when the role is not installed" || t_pass "lead unchanged when design is not installed"
+bash "$I" --target "$G1" --check >/dev/null 2>&1; t_eq 0 "$?" "--check clean with the design role"
+cfgset "$G1/roles.config.json" 'c["design"]["signoff"]=False'
+bash "$I" --target "$G1" >/dev/null 2>&1
+grep -q 'design.signoff is off' "$DG" && t_pass "signoff=false: the design role says sign-off is off" || t_fail "design signoff=false"
 
 t_done
